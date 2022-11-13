@@ -29,7 +29,7 @@ using FileIO
 end
 
 #We initialize the model according to some parameters.
-function  model_init(;pr,dr,mr,seed,h,w,ngenes,fitness,cell_pos,wall_pos)
+function  model_init(;pr,dr,mr,seed,h,w,ngenes,fitness,cell_pos,wall_pos,treatment)
     
     rng = MersenneTwister(seed)
 
@@ -41,7 +41,7 @@ function  model_init(;pr,dr,mr,seed,h,w,ngenes,fitness,cell_pos,wall_pos)
         wall_matrix[i,j]=1
     end
 
-    properties=@dict(ngenes,pr,dr,mr,fitness,wall_pos,wall_matrix)
+    properties=@dict(ngenes,pr,dr,mr,fitness,wall_pos,wall_matrix,treatment)
     model = ABM(Cell, space;properties, rng) 
     #we create each cell
     for cell in cell_pos
@@ -64,9 +64,33 @@ function agent_step!(agent, model)
     end
     agent.time_alive += 1
     agent.near_cells = get_near!(agent,model)
-    reproduce!(agent, model)
+    
+    if reproduce!(agent, model)
+        return
+    end
     move!(agent, model)
-    die!(agent, model)
+    if die!(agent, model)
+        return
+    end
+end
+
+#We use the model step to evaluate the treatment
+function model_step!(model)
+    current_size = length(model.agents)
+    if current_size < model.treatment.pausing_size
+        model.treatment.active = false
+    end
+    if current_size > model.treatment.starting_size
+        model.treatment.active = true
+    end
+end
+
+function treat!(agent,model)
+    if model.treatment.active && agent.genotype[model.treatment.resistance_gene]!=1
+        kill_agent!(agent,model)
+        return true
+    end
+    return false
 end
 
 #with a probability p choose a random non mutated gene and mutate it.
@@ -83,8 +107,14 @@ function reproduce!(agent,model)
     pid = agent.pos
     newgenom = copy(agent.genotype)
     if rand(model.rng) < pr/(get_near!(agent,model)^2)
+        if rand(model.rng) < model.treatment.kill_rate
+            if treat!(agent,model)
+                return true
+            end
+        end
         add_agent!(pid,model,0,0,newgenom)
     end
+    return false
 end
 
 #Move every cell to a random nearby space ONLY if your space is "crowded", crowded for example is more than 1 cell in your space 
@@ -107,7 +137,9 @@ function die!(agent, model)
     nearby = [x for x in nearby_positions(agent,model,1)]
     if rand(model.rng) < model.dr*(get_near!(agent,model)^2)
         kill_agent!(agent, model)
+        return true
     end
+    return false
 end
 
 #A generator that returns a list of functions that each get the number of cells of each genotype given a number of genes.
@@ -164,4 +196,13 @@ function get_scenario(filepath)
     end
 
     return dims[2],dims[1],cell_pos,wall_pos
+end
+
+#We define what a treatment is
+mutable struct Treatment
+    pausing_size::Int 
+    starting_size::Int
+    resistance_gene::Int
+    kill_rate::Float16
+    active::Bool
 end
