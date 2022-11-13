@@ -17,7 +17,8 @@ using DataFrames
 
 using RCall
 
-
+using Images
+using FileIO
 
 
 #We create the Cell agent
@@ -28,18 +29,26 @@ using RCall
 end
 
 #We initialize the model according to some parameters.
-function  model_init(;pr,dr,mr,seed,l,n0,ngenes,fitness)
+function  model_init(;pr,dr,mr,seed,h,w,ngenes,fitness,cell_pos,wall_pos)
     
     rng = MersenneTwister(seed)
 
-    space = GridSpace((l, l))
-    properties=@dict(ngenes,pr,dr,mr,fitness)
-    model = ABM(Cell, space;properties, rng) 
-
-    for i in 1:n0
-        #add_agent!(model,0,0,BitArray([false for x in 1:ngenes])) #With this one we generate at random over the grid
-        add_agent!((Int(floor(l/2)),Int(floor(l/2))),model,0,0,BitArray([false for x in 1:ngenes])) #With this we generate all of them at the middle point
+    space = GridSpace((h, w))
+    #we create the walls visualization matrix
+    wall_matrix=zeros(Int8, h, w)
+    for t in wall_pos
+        i,j=t
+        wall_matrix[i,j]=1
     end
+
+    properties=@dict(ngenes,pr,dr,mr,fitness,wall_pos,wall_matrix)
+    model = ABM(Cell, space;properties, rng) 
+    #we create each cell
+    for cell in cell_pos
+        add_agent!((cell[1],cell[2]),model,0,0,BitArray([false for x in 1:ngenes])) # With this one we use the scenario
+    end
+
+
     return model
 end
 
@@ -82,6 +91,10 @@ end
 function move!(agent, model)
     pos = agent.pos
     nearby = [x for x in nearby_positions(agent,model,1)]
+    setdiff!(nearby,model.wall_pos)
+    if length(nearby)==0
+        return
+    end
     newpos = rand(model.rng, nearby)
     if length(ids_in_position(agent, model)) > 1
         move_agent!(agent,newpos, model)
@@ -132,4 +145,23 @@ end
 function bit_2_int(arr)
     arr = reverse(arr)
     sum(((i, x),) -> Int(x) << ((i-1) * sizeof(x)), enumerate(arr.chunks))
+end
+
+#Function to read a scenario from a file. Reads cells and walls.
+function get_scenario(filepath)
+    scenario = FileIO.load(filepath)
+    dims = size(scenario)
+    cell_pos=Tuple[]
+    wall_pos=Tuple[]
+    for i in 1:dims[1]
+        for j in 1:dims[2]
+            if scenario[i,j]==RGB{N0f8}(0.133,0.694,0.298)
+                push!(cell_pos,(j,(dims[1]+1)-i))
+            elseif scenario[i,j]==RGB{N0f8}(0,0,0)
+                push!(wall_pos,(j,(dims[1]+1)-i))
+            end
+        end
+    end
+
+    return dims[2],dims[1],cell_pos,wall_pos
 end
