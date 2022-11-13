@@ -59,13 +59,13 @@ end
 
 #Step evey agent, updating its parameters and then reproducing, moving and dying.
 function agent_step!(agent, model)
-    if agent.time_alive == 0
+    if agent.time_alive == 0 #We mutate the cell if it has just been born
         mutate!(agent,model)
     end
     agent.time_alive += 1
     agent.near_cells = get_near!(agent,model)
     
-    if reproduce!(agent, model)
+    if reproduce!(agent, model) #We want to stop doing things if the cell has died.
         return
     end
     move!(agent, model)
@@ -85,6 +85,7 @@ function model_step!(model)
     end
 end
 
+#If the cell is susceptible to the treatment, and treatment is active, it dies. Returns true if the cell has dies
 function treat!(agent,model)
     if model.treatment.active && agent.genotype[model.treatment.resistance_gene]!=1
         kill_agent!(agent,model)
@@ -101,7 +102,9 @@ function mutate!(agent,model)
     end
 end
 
-#reproduce, creating a new cell in the same space with a probability that decreases with how many cells are already in its space
+#Reproduce, creating a new cell in the same space with a probability that decreases with how many cells are already in its space.
+#With a probability (the kill rate of the treatment), the cell is subjected to a treatment check.
+#Returns true if the cell has died.
 function reproduce!(agent,model)
     pr = model.pr*model.fitness[bit_2_int(agent.genotype)]
     pid = agent.pos
@@ -131,10 +134,8 @@ function move!(agent, model)
     end
 end
 
-#die, with a probability that increases with the number of cells that are in its space.
+#die, with a probability that increases with the number of cells that are in its space. returns true if the cell has died.
 function die!(agent, model)
-    pos = agent.pos
-    nearby = [x for x in nearby_positions(agent,model,1)]
     if rand(model.rng) < model.dr*(get_near!(agent,model)^2)
         kill_agent!(agent, model)
         return true
@@ -179,7 +180,8 @@ function bit_2_int(arr)
     sum(((i, x),) -> Int(x) << ((i-1) * sizeof(x)), enumerate(arr.chunks))
 end
 
-#Function to read a scenario from a file. Reads cells and walls.
+#Function to read a scenario from a file. Reads cells and walls and defines the size of the grid.
+#IDEA: associate each color with a genotype, to allow for more flexible scenarios.
 function get_scenario(filepath)
     scenario = FileIO.load(filepath)
     dims = size(scenario)
@@ -187,15 +189,15 @@ function get_scenario(filepath)
     wall_pos=Tuple[]
     for i in 1:dims[1]
         for j in 1:dims[2]
-            if scenario[i,j]==RGB{N0f8}(0.133,0.694,0.298)
+            if scenario[i,j]==RGB{N0f8}(0.133,0.694,0.298) #Initial cells are painted with the default deep green color from MS Paint.
                 push!(cell_pos,(j,(dims[1]+1)-i))
-            elseif scenario[i,j]==RGB{N0f8}(0,0,0)
+            elseif scenario[i,j]==RGB{N0f8}(0,0,0) #Walls are painted black
                 push!(wall_pos,(j,(dims[1]+1)-i))
             end
         end
     end
 
-    return dims[2],dims[1],cell_pos,wall_pos
+    return dims[2],dims[1],cell_pos,wall_pos #We return height, width, the positions of the cells and the positions of the walls
 end
 
 #We define what a treatment is
