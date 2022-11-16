@@ -3,7 +3,7 @@ Simulation of tumoral growth using a julia ABM library </br>
 
 # Interactive demo instructions</br>
  - Open the Julia REPL in the repository folder.
- - include("Interactive_demo.jl")
+ - include("interactive_demo.jl")
     - The first time you run it, it will take some time to load.
  - Edit the scenario and click "Start simulation".
  - set the sleep slider to 0 and click "Run model".
