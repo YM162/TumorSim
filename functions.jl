@@ -22,32 +22,50 @@ using FileIO
 
 
 #We create the Cell agent
-@agent Cell GridAgent{2} begin
+@agent GridCell GridAgent{3} begin
+        time_alive::Int  # Time the cell has been alive
+        near_cells::Int # Number of cells in the neighborhood
+        genotype::BitArray # Genotype of the cell
+end
+
+@agent GraphCell GraphAgent begin
         time_alive::Int  # Time the cell has been alive
         near_cells::Int # Number of cells in the neighborhood
         genotype::BitArray # Genotype of the cell
 end
 
 #We initialize the model according to some parameters.
-function  model_init(;pr,dr,mr,seed,h,w,ngenes,fitness,cell_pos,wall_pos,treatment)
+function  model_init(;pr,dr,mr,seed,x,y,z,ngenes,fitness,cell_pos,wall_pos,treatment)
     
+    fitness = Dict(zip([BitArray(i) for i in keys(fitness)],[fitness[i] for i in keys(fitness)]))
+    fitness=DefaultDict(0,fitness)
+
     rng = MersenneTwister(seed)
 
-    space = GridSpace((h, w))
-    #we create the walls visualization matrix
-    wall_matrix=zeros(Int8, h, w)
-    for t in wall_pos
-        i,j=t
-        wall_matrix[i,j]=1
-    end
+    if y!=0 && z!=0
+        space = GridSpace((x, y, z),periodic=false)
+        #we create the walls visualization matrix
+        wall_matrix=zeros(Int8, x, y, z)
+        for t in wall_pos
+            i,j,k=t
+            wall_matrix[i,j,k]=1
+        end
 
-    properties=@dict(ngenes,pr,dr,mr,fitness,wall_pos,wall_matrix,treatment)
-    model = ABM(Cell, space;properties, rng) 
-    #we create each cell
-    for cell in cell_pos
-        add_agent!((cell[1],cell[2]),model,0,0,BitArray([false for x in 1:ngenes])) # With this one we use the scenario
+        properties=@dict(ngenes,pr,dr,mr,fitness,wall_pos,wall_matrix,treatment)
+        model = ABM(GridCell, space;properties, rng) 
+        #we create each cell
+        for cell in cell_pos
+            add_agent!((cell[1],cell[2],cell[3]),model,0,0,BitArray([false for x in 1:ngenes])) # With this one we use the scenario
+        end
+    else
+        space = GraphSpace(complete_digraph(x))
+        wall_matrix=zeros(Int8, x)
+        properties=@dict(ngenes,pr,dr,mr,fitness,wall_pos,wall_matrix,treatment)
+        model = ABM(GraphCell, space;properties, rng) 
+        for cell in cell_pos
+            add_agent!(model,0,0,BitArray([false for x in 1:ngenes])) # With this one we use the scenario
+        end
     end
-
 
     return model
 end
@@ -59,9 +77,6 @@ end
 
 #Step evey agent, updating its parameters and then reproducing, moving and dying.
 function agent_step!(agent, model)
-    if agent.time_alive == 0 #We mutate the cell if it has just been born
-        mutate!(agent,model)
-    end
     agent.time_alive += 1
     agent.near_cells = get_near!(agent,model)
     
@@ -106,16 +121,19 @@ end
 #With a probability (the kill rate of the treatment), the cell is subjected to a treatment check.
 #Returns true if the cell has died.
 function reproduce!(agent,model)
-    pr = model.pr*model.fitness[bit_2_int(agent.genotype)]
+    pr = model.pr*model.fitness[agent.genotype]
     pid = agent.pos
     newgenom = copy(agent.genotype)
-    if rand(model.rng) < pr/(get_near!(agent,model)^2)
+    prob = pr/(get_near!(agent,model)^2)
+    if rand(model.rng) < prob/(1+prob)
         if rand(model.rng) < model.treatment.kill_rate
             if treat!(agent,model)
                 return true
             end
         end
-        add_agent!(pid,model,0,0,newgenom)
+        newagent = add_agent!(pid,model,0,0,newgenom)
+        mutate!(newagent,model)
+        mutate!(agent,model)
     end
     return false
 end
@@ -124,11 +142,14 @@ end
 function move!(agent, model)
     pos = agent.pos
     nearby = [x for x in nearby_positions(agent,model,1)]
+
     setdiff!(nearby,model.wall_pos)
-    if length(nearby)==0
-        return
-    end
-    newpos = rand(model.rng, nearby)
+    nearby_density = [1/(length(ids_in_position(x,model))+1) for x in nearby]
+    
+    push!(nearby,pos)
+    push!(nearby_density,1/length(ids_in_position(agent,model)))
+
+    newpos = sample(model.rng, nearby, Weights(nearby_density))
     if length(ids_in_position(agent, model)) > 1
         move_agent!(agent,newpos, model)
     end
@@ -136,7 +157,8 @@ end
 
 #die, with a probability that increases with the number of cells that are in its space. returns true if the cell has died.
 function die!(agent, model)
-    if rand(model.rng) < model.dr*(get_near!(agent,model)^2)
+    prob = model.dr*(get_near!(agent,model)^2)
+    if rand(model.rng) < prob/(1+prob)
         kill_agent!(agent, model)
         return true
     end
@@ -169,15 +191,9 @@ function OncoSimulR_rfitness(;g,c,sd)
         for j in 1:g
             push!(genotype,fitness[i,j])
         end
-        push!(dictionary,(bit_2_int(genotype)=>Float64(fitness[i,g+1])))
+        push!(dictionary,(genotype=>Float64(fitness[i,g+1])))
     end
     return dictionary
-end
-
-#Function to go from BitArray to Int. Taken from https://discourse.julialang.org/t/parse-an-array-of-bits-bitarray-to-an-integer/42361/5
-function bit_2_int(arr)
-    arr = reverse(arr)
-    sum(((i, x),) -> Int(x) << ((i-1) * sizeof(x)), enumerate(arr.chunks))
 end
 
 #Function to read a scenario from a file. Reads cells and walls and defines the size of the grid.
@@ -207,4 +223,10 @@ mutable struct Treatment
     resistance_gene::Int
     kill_rate::Float16
     active::Bool
+end
+
+#Function to go from BitArray to Int. Taken from https://discourse.julialang.org/t/parse-an-array-of-bits-bitarray-to-an-integer/42361/5
+function bit_2_int(arr)
+    arr = reverse(arr)
+    sum(((i, x),) -> Int(x) << ((i-1) * sizeof(x)), enumerate(arr.chunks))
 end
