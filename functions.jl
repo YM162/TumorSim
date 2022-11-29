@@ -2,10 +2,10 @@
 cd(@__DIR__) #src
 using Agents, Random
 using Agents.DataFrames, Agents.Graphs
-using Distributions: Poisson, DiscreteNonParametric
+using Distributions
 using DrWatson: @dict
-using CairoMakie
-CairoMakie.activate!()
+using GLMakie
+GLMakie.activate!()
 
 
 using InteractiveDynamics
@@ -22,15 +22,9 @@ using FileIO
 
 
 #We create the Cell agent
-@agent GridCell GridAgent{3} begin
+@agent Cell GridAgent{3} begin
         time_alive::Int  # Time the cell has been alive
-        near_cells::Int # Number of cells in the neighborhood
-        genotype::BitArray # Genotype of the cell
-end
-
-@agent GraphCell GraphAgent begin
-        time_alive::Int  # Time the cell has been alive
-        near_cells::Int # Number of cells in the neighborhood
+        near_cells::Number # Number of cells in the neighborhood
         genotype::BitArray # Genotype of the cell
 end
 
@@ -57,17 +51,17 @@ function  model_init(;seed,pr,dr,mr,ngenes,fitness,scenario,treatment)
             wall_matrix[i,j,k]=1
         end
 
-        properties=@dict(ngenes,pr,dr,mr,fitness,wall_pos,wall_matrix,treatment)
-        model = ABM(GridCell, space;properties, rng) 
+        properties=@dict(ngenes,pr,dr,mr,fitness,wall_pos,wall_matrix,treatment,scenario)
+        model = ABM(Cell, space;properties, rng) 
         #we create each cell
         for cell in cell_pos
             add_agent!((cell[1],cell[2],cell[3]),model,0,0,BitArray([false for x in 1:ngenes])) # With this one we use the scenario
         end
     else
-        space = GraphSpace(complete_digraph(x))
-        wall_matrix=zeros(Int8, x)
-        properties=@dict(ngenes,pr,dr,mr,fitness,wall_pos,wall_matrix,treatment)
-        model = ABM(GraphCell, space;properties, rng) 
+        space = GridSpace((1,1,1),periodic=false)
+        wall_matrix=zeros(Int8, 1)
+        properties=@dict(ngenes,pr,dr,mr,fitness,wall_pos,wall_matrix,treatment,scenario)
+        model = ABM(Cell, space;properties, rng) 
         for cell in cell_pos
             add_agent!(model,0,0,BitArray([false for x in 1:ngenes])) # With this one we use the scenario
         end
@@ -76,9 +70,15 @@ function  model_init(;seed,pr,dr,mr,ngenes,fitness,scenario,treatment)
     return model
 end
 
-#Function to get the number of cells "near" each cell. As i dont know what should count as near (only the space or a mean of the 8 surrounding spaces? for example) i prefer to define it in a single place and then change it.
+#Function to get the number of cells "near" each cell.
 function get_near!(agent,model)
-    length(ids_in_position(agent, model))
+    if model.scenario.z==0 #If we are in 0D
+
+        bin = Binomial(length(model.agents),1/model.scenario.x)
+        return (length(model.agents)/model.scenario.x)/(1-pdf(bin,0)) #We calculate the mean number of cells in each cell´s space using a binomial distribution.
+
+    end
+    return length(ids_in_position(agent, model))
 end
 
 #Step evey agent, updating its parameters and then reproducing, moving and dying.
@@ -89,7 +89,9 @@ function agent_step!(agent, model)
     if reproduce!(agent, model) #We want to stop doing things if the cell has died.
         return
     end
-    move!(agent, model)
+    if model.scenario.z!=0 #We dont move if we are in 0D
+        move!(agent, model)
+    end
     if die!(agent, model)
         return
     end
@@ -145,7 +147,12 @@ function reproduce!(agent,model)
         end
         newagent = add_agent!(pid,model,0,0,newgenom)
         mutate!(newagent,model)
+        kill_non_viable!(newagent, model)
+
         mutate!(agent,model)
+        if kill_non_viable!(agent, model)
+            return true
+        end
     end
     return false
 end
@@ -177,10 +184,18 @@ function die!(agent, model)
     return false
 end
 
+#we kill all non viable agents instantly to make our data cleaner
+function kill_non_viable!(agent, model)
+    if !(agent.genotype in keys(model.fitness))
+        kill_agent!(agent,model)
+        return true
+    end
+    return false
+end
 #A generator that returns a list of functions that each get the number of cells of each genotype given a number of genes.
-function genotype_fraction_function_generator(ngenes)
+function genotype_fraction_function_generator(ngenes,fitness)
     functions = []
-    for i in 0:((2^ngenes)-1)
+    for i in [bit_2_int(BitArray(x)) for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
         compare = reverse(digits(i, base=2, pad=ngenes))
         func = function get_perc(x)
             len = length(findall([string(y)[5:end] for y in x] .== string(compare)))
