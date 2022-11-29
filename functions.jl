@@ -98,11 +98,17 @@ end
 #We use the model step to evaluate the treatment
 function model_step!(model)
     current_size = length(model.agents)
-    if current_size < model.treatment.pausing_size
-        model.treatment.active = false
-    end
-    if current_size > model.treatment.starting_size
-        model.treatment.active = true
+    if model.treatment.detected
+        if current_size < model.treatment.pausing_size
+            model.treatment.active = false
+        end
+        if current_size > model.treatment.starting_size
+            model.treatment.active = true
+        end
+    else
+        if current_size > model.treatment.detecting_size
+            model.treatment.detected = true
+        end
     end
 end
 
@@ -230,11 +236,13 @@ end
 
 #We define what a treatment is
 mutable struct Treatment
-    pausing_size::Int 
+    detecting_size::Int
     starting_size::Int
+    pausing_size::Int 
     resistance_gene::Int
     kill_rate::Float16
     active::Bool
+    detected::Bool
 end
 
 #We define the scenario and the functions to create it using multiple dispatch.
