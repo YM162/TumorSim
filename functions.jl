@@ -20,6 +20,7 @@ using RCall
 using Images
 using FileIO
 
+using CSV
 
 #We create the Cell agent
 @agent Cell GridAgent{3} begin
@@ -29,13 +30,24 @@ using FileIO
 end
 
 #We initialize the model according to some parameters.
-function  model_init(;seed,pr,dr,mr,ngenes,fitness,scenario,treatment)
+function  model_init(;seed,pr,dr,mr,fitness,scenario,treatment)
+    #We need to do this to reuse the treatment in paramscan
+    treatment = Treatment(treatment.detecting_size,
+                            treatment.starting_size,
+                            treatment.pausing_size,
+                            treatment.resistance_gene,
+                            treatment.kill_rate,
+                            treatment.active,
+                            treatment.detected)
+
     x = scenario.x
     y = scenario.y
     z = scenario.z
     cell_pos = scenario.cell_pos
     wall_pos = scenario.wall_pos
-    
+    current_size=length(cell_pos)
+
+    ngenes=length(collect(keys(fitness))[1])
     
     fitness = Dict(zip([BitArray(i) for i in keys(fitness)],[fitness[i] for i in keys(fitness)]))
     fitness=DefaultDict(0,fitness)
@@ -51,7 +63,7 @@ function  model_init(;seed,pr,dr,mr,ngenes,fitness,scenario,treatment)
             wall_matrix[i,j,k]=1
         end
 
-        properties=@dict(ngenes,pr,dr,mr,fitness,wall_pos,wall_matrix,treatment,scenario)
+        properties=@dict(pr,dr,mr,fitness,wall_pos,wall_matrix,treatment,scenario,current_size)
         model = ABM(Cell, space;properties, rng) 
         #we create each cell
         for cell in cell_pos
@@ -60,7 +72,7 @@ function  model_init(;seed,pr,dr,mr,ngenes,fitness,scenario,treatment)
     else
         space = GridSpace((1,1,1),periodic=false)
         wall_matrix=zeros(Int8, 1)
-        properties=@dict(ngenes,pr,dr,mr,fitness,wall_pos,wall_matrix,treatment,scenario)
+        properties=@dict(pr,dr,mr,fitness,wall_pos,wall_matrix,treatment,scenario,current_size)
         model = ABM(Cell, space;properties, rng) 
         for cell in cell_pos
             add_agent!(model,0,0,BitArray([false for x in 1:ngenes])) # With this one we use the scenario
@@ -100,6 +112,7 @@ end
 #We use the model step to evaluate the treatment
 function model_step!(model)
     current_size = length(model.agents)
+    model.current_size = current_size
     if model.treatment.detected
         if current_size < model.treatment.pausing_size
             model.treatment.active = false
@@ -193,10 +206,10 @@ function kill_non_viable!(agent, model)
     return false
 end
 #A generator that returns a list of functions that each get the number of cells of each genotype given a number of genes.
-function genotype_fraction_function_generator(ngenes,fitness)
+function genotype_fraction_function_generator(fitness)
     functions = []
-    for i in [bit_2_int(BitArray(x)) for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
-        compare = reverse(digits(i, base=2, pad=ngenes))
+    for i in [x for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
+        compare = i
         func = function get_perc(x)
             len = length(findall([string(y)[5:end] for y in x] .== string(compare)))
             return len
@@ -214,18 +227,18 @@ function OncoSimulR_rfitness(;g,c,sd)
     rows=2^g
     dictionary=Dict()
     for i in 1:rows
-        genotype=BitArray([])
+        genotype::Vector{Int64}=[]
         for j in 1:g
-            push!(genotype,fitness[i,j])
+            push!(genotype,Int(fitness[i,j]))
         end
-        push!(dictionary,(genotype=>Float64(fitness[i,g+1])))
+        push!(dictionary,(genotype=>Real(fitness[i,g+1])))
     end
     return dictionary
 end
 
 #Function to read a scenario from a file. Reads cells and walls and defines the size of the grid.
 #IDEA: associate each color with a genotype, to allow for more flexible scenarios.
-function get_scenario(filepath)
+function get_2D_scenario_from_bmp(filepath)
     scenario = FileIO.load(filepath)
     dims = size(scenario)
     cell_pos=Tuple[]
@@ -239,8 +252,7 @@ function get_scenario(filepath)
             end
         end
     end
-
-    return dims[2],dims[1],cell_pos,wall_pos #We return height, width, the positions of the cells and the positions of the walls
+    return Scenario(dims[2],dims[1],1,cell_pos,wall_pos)
 end
 
 #Function to go from BitArray to Int. Taken from https://discourse.julialang.org/t/parse-an-array-of-bits-bitarray-to-an-integer/42361/5
