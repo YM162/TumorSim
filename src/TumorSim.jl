@@ -1,38 +1,39 @@
+module TumorSim
+export create_scenario, model_init, agent_step!, model_step!,genotype_fraction_function_generator, bit_2_int, Treatment
 #We import everything we need
 cd(@__DIR__) #src
-using Distributed
-addprocs(4)
-@everywhere using Agents, Random
-@everywhere using Agents.DataFrames, Agents.Graphs
-@everywhere using Distributions
-@everywhere using DrWatson: @dict
-@everywhere using GLMakie
+
+ using Agents, Random
+ using Agents.DataFrames, Agents.Graphs
+ using Distributions
+ using DrWatson: @dict
+ using GLMakie
 GLMakie.activate!()
 
 
-@everywhere using InteractiveDynamics
-@everywhere using StatsBase
-@everywhere using ColorSchemes
-@everywhere using DataStructures
-@everywhere using VegaLite
-@everywhere using DataFrames
+ using InteractiveDynamics
+ using StatsBase
+ using ColorSchemes
+ using DataStructures
+ using VegaLite
+ using DataFrames
 
-@everywhere using RCall
+ using RCall
 
-@everywhere using Images
-@everywhere using FileIO
+ using Images
+ using FileIO
 
-@everywhere using CSV
+ using CSV
 
 #We create the Cell agent
-@everywhere @agent Cell GridAgent{3} begin
+ @agent Cell GridAgent{3} begin
         time_alive::Int  # Time the cell has been alive
         near_cells::Number # Number of cells in the neighborhood
         genotype::BitArray # Genotype of the cell
 end
 
 #We initialize the model according to some parameters.
-@everywhere function  model_init(;seed,pr,dr,mr,fitness,scenario,treatment)
+ function  model_init(;seed,pr,dr,mr,fitness,scenario,treatment)
     #We need to do this to reuse the treatment in paramscan
     treatment = Treatment(treatment.detecting_size,
                             treatment.starting_size,
@@ -85,7 +86,7 @@ end
 end
 
 #Function to get the number of cells "near" each cell.
-@everywhere function get_near!(agent,model)
+ function get_near!(agent,model)
     if model.scenario.z==0 #If we are in 0D
 
         bin = Binomial(length(model.agents),1/model.scenario.x)
@@ -96,7 +97,7 @@ end
 end
 
 #Step evey agent, updating its parameters and then reproducing, moving and dying.
-@everywhere function agent_step!(agent, model)
+ function agent_step!(agent, model)
     agent.time_alive += 1
     agent.near_cells = get_near!(agent,model)
     
@@ -112,7 +113,7 @@ end
 end
 
 #We use the model step to evaluate the treatment
-@everywhere function model_step!(model)
+ function model_step!(model)
     current_size = length(model.agents)
     model.current_size = current_size
     if model.treatment.detected
@@ -130,7 +131,7 @@ end
 end
 
 #If the cell is susceptible to the treatment, and treatment is active, it dies. Returns true if the cell has dies
-@everywhere function treat!(agent,model)
+ function treat!(agent,model)
     if model.treatment.active && agent.genotype[model.treatment.resistance_gene]!=1
         kill_agent!(agent,model)
         return true
@@ -139,7 +140,7 @@ end
 end
 
 #with a probability p choose a random non mutated gene and mutate it.
-@everywhere function mutate!(agent,model)
+ function mutate!(agent,model)
     genes=findall(agent.genotype .!=1)
     if genes!=[] && rand(model.rng) < model.mr
         agent.genotype[rand(model.rng,genes)]=true
@@ -149,7 +150,7 @@ end
 #Reproduce, creating a new cell in the same space with a probability that decreases with how many cells are already in its space.
 #With a probability (the kill rate of the treatment), the cell is subjected to a treatment check.
 #Returns true if the cell has died.
-@everywhere function reproduce!(agent,model)
+ function reproduce!(agent,model)
     pr = model.pr*model.fitness[agent.genotype]
     pid = agent.pos
     newgenom = copy(agent.genotype)
@@ -173,7 +174,7 @@ end
 end
 
 #Move every cell to a random nearby space ONLY if your space is "crowded", crowded for example is more than 1 cell in your space 
-@everywhere function move!(agent, model)
+ function move!(agent, model)
     pos = agent.pos
     nearby = [x for x in nearby_positions(agent,model,1)]
 
@@ -190,7 +191,7 @@ end
 end
 
 #die, with a probability that increases with the number of cells that are in its space. returns true if the cell has died.
-@everywhere function die!(agent, model)
+ function die!(agent, model)
     prob = model.dr*(get_near!(agent,model)^2)
     if rand(model.rng) < prob/(1+prob)
         kill_agent!(agent, model)
@@ -200,7 +201,7 @@ end
 end
 
 #we kill all non viable agents instantly to make our data cleaner
-@everywhere function kill_non_viable!(agent, model)
+ function kill_non_viable!(agent, model)
     if !(agent.genotype in keys(model.fitness))
         kill_agent!(agent,model)
         return true
@@ -208,7 +209,7 @@ end
     return false
 end
 #A generator that returns a list of functions that each get the number of cells of each genotype given a number of genes.
-@everywhere function genotype_fraction_function_generator(fitness)
+ function genotype_fraction_function_generator(fitness)
     functions = []
     for i in [x for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
         compare = i
@@ -223,7 +224,7 @@ end
 
 #Function to create a random fitness landscape using the OncoSimulR library.
 #How can i feed it a seed??
-@everywhere function OncoSimulR_rfitness(;g,c,sd)
+ function OncoSimulR_rfitness(;g,c,sd)
     R"library(OncoSimulR)"
     fitness = R"rfitness(g=$g ,c=$c ,sd=$sd )"
     rows=2^g
@@ -240,7 +241,7 @@ end
 
 #Function to read a scenario from a file. Reads cells and walls and defines the size of the grid.
 #IDEA: associate each color with a genotype, to allow for more flexible scenarios.
-@everywhere function get_2D_scenario_from_bmp(filepath)
+ function get_2D_scenario_from_bmp(filepath)
     scenario = FileIO.load(filepath)
     dims = size(scenario)
     cell_pos=Tuple[]
@@ -258,13 +259,13 @@ end
 end
 
 #Function to go from BitArray to Int. Taken from https://discourse.julialang.org/t/parse-an-array-of-bits-bitarray-to-an-integer/42361/5
-@everywhere function bit_2_int(arr)
+ function bit_2_int(arr)
     arr = reverse(arr)
     sum(((i, x),) -> Int(x) << ((i-1) * sizeof(x)), enumerate(arr.chunks))
 end
 
 #We define what a treatment is
-@everywhere mutable struct Treatment
+ mutable struct Treatment
     detecting_size::Int
     starting_size::Int
     pausing_size::Int 
@@ -275,7 +276,7 @@ end
 end
 
 #We define the scenario and the functions to create it using multiple dispatch.
-@everywhere struct Scenario
+ struct Scenario
     x::Int
     y::Int
     z::Int
@@ -284,12 +285,12 @@ end
 end
 
 #0D
-@everywhere function create_scenario(size::Int64,ncells::Int)   
+ function create_scenario(size::Int64,ncells::Int)   
     return Scenario(size,0,0,[(1,1,1) for i in 1:ncells],[])
 end
 
 #1D
-@everywhere function create_scenario(size::Tuple{Int64},ncells::Int,cell_pos::String="center",wall_pos::Vector=[])
+ function create_scenario(size::Tuple{Int64},ncells::Int,cell_pos::String="center",wall_pos::Vector=[])
     if cell_pos=="random"
         cell_pos = [((rand(1:size[1])),1,1) for i in 1:ncells]
     elseif cell_pos=="center"
@@ -301,12 +302,12 @@ end
         return Scenario(size[1],1,1,cell_pos,wall_pos)
 end
 
-@everywhere function create_scenario(size::Tuple{Int64},cell_pos::Vector{Tuple{Int64}},wall_pos=[])
+ function create_scenario(size::Tuple{Int64},cell_pos::Vector{Tuple{Int64}},wall_pos=[])
         return Scenario(size[1],1,1,[(x[1],1,1) for x in cell_pos],wall_pos)
 end
 
 #2D
-@everywhere function create_scenario(size::Tuple{Int64, Int64},ncells::Int,cell_pos::String="center",wall_pos::Vector=[])
+ function create_scenario(size::Tuple{Int64, Int64},ncells::Int,cell_pos::String="center",wall_pos::Vector=[])
     if cell_pos=="random"
         cell_pos = [((rand(1:size[1])),(rand(1:size[2])),1) for i in 1:ncells]
     elseif cell_pos=="center"
@@ -318,12 +319,12 @@ end
         return Scenario(size[1],size[2],1,cell_pos,wall_pos)
 end
 
-@everywhere function create_scenario(size::Tuple{Int64,Int64},cell_pos::Vector{Tuple{Int64, Int64}},wall_pos::Vector=[])
+ function create_scenario(size::Tuple{Int64,Int64},cell_pos::Vector{Tuple{Int64, Int64}},wall_pos::Vector=[])
         return Scenario(size[1],size[2],1,[(x[1],x[2],1) for x in cell_pos],wall_pos)
 end
 
 #3D
-@everywhere function create_scenario(size::Tuple{Int64, Int64, Int64},ncells::Int,cell_pos::String="center",wall_pos::Vector=[])
+ function create_scenario(size::Tuple{Int64, Int64, Int64},ncells::Int,cell_pos::String="center",wall_pos::Vector=[])
     if cell_pos=="random"
         cell_pos = [((rand(1:size[1])),(rand(1:size[2])),(rand(1:size[3]))) for i in 1:ncells]
     elseif cell_pos=="center"
@@ -335,6 +336,8 @@ end
         return Scenario(size[1],size[2],size[3],cell_pos,wall_pos)
 end
 
-@everywhere function create_scenario(size::Tuple{Int64,Int64,Int64},cell_pos::Vector{Tuple{Int64, Int64,Int64}},wall_pos::Vector=[])
+ function create_scenario(size::Tuple{Int64,Int64,Int64},cell_pos::Vector{Tuple{Int64, Int64,Int64}},wall_pos::Vector=[])
         return Scenario(size[1],size[2],size[3],[(x[1],x[2],x[3]) for x in cell_pos],wall_pos)
+end
+
 end
