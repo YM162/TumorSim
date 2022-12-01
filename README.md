@@ -1,6 +1,8 @@
+TumorSim.jl
+===========
 ![CI build](https://github.com/YM162/TumorSim/actions/workflows/CI.yml/badge.svg)
-# <b>TumorSim.jl</b> </br>
-Simulation of tumoral growth using Agents.jl </br>
+![Codecov](https://app.codecov.io/gh/YM162/TumorSim)
+***Simulation of tumoral growth in multiple dimensions with a special focus on fitness landscapes and adaptive therapy.***
 
 # How to install
 <b>1.- Clone the git repo:</b>

@@ -31,9 +31,6 @@ jobs:
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v1
       - uses: julia-actions/julia-buildpkg@v1
-      - name: Configure CodeCov
-        run: >
-          CODECOV_TOKEN=9be94d7b-5917-479d-8393-b3f8dca25a31
       - name: Run tests
         run: >
           julia --project=. --color=yes --code-coverage test/runtests.jl
