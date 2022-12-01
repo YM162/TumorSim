@@ -1,4 +1,5 @@
-# <b>tumor-sim</b> </br>
+![CI build](https://github.com/YM162/TumorSim/actions/workflows/CI.yml/badge.svg)
+# <b>TumorSim.jl</b> </br>
 Simulation of tumoral growth using Agents.jl </br>
 
 # How to install

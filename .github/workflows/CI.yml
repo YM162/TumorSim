@@ -31,7 +31,9 @@ jobs:
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v1
       - uses: julia-actions/julia-buildpkg@v1
-
       - name: Run tests
         run: >
-          julia --project=. --color=yes test/runtests.jl
+          julia --project=. --color=yes --code-coverage test/runtests.jl
+      - name: Upload to codecov
+        run: >
+          julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'

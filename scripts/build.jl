@@ -1,4 +1,3 @@
-#NOT WORKING RIGHT NOW
 using DrWatson
 @quickactivate "TumorSim"
 
