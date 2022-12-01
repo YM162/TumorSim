@@ -1,5 +1,5 @@
 module TumorSim
-export create_scenario, model_init, agent_step!, model_step!,genotype_fraction_function_generator, bit_2_int, Treatment
+export create_scenario, model_init, agent_step!, model_step!,genotype_fraction_function_generator, bit_2_int, launch_simulation, plot_genotypes, Treatment
 #We import everything we need
 cd(@__DIR__) #src
 
@@ -381,4 +381,7 @@ function plot_genotypes(adata,fitness,mode="absolute")
         @vlplot(:area, x=:step, y={:value, stack=:normalize}, color="variable:n")
     else
         println("Mode not supported")
+    end
+end
+
 end
