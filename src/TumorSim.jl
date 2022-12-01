@@ -340,4 +340,45 @@ end
         return Scenario(size[1],size[2],size[3],[(x[1],x[2],x[3]) for x in cell_pos],wall_pos)
 end
 
+function launch_simulation(model;fitness,agent_step!,model_step!)
+    #We plot the genotype of each cell with a different color.
+    genotypes = [replace(string(x)," "=>"") for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
+    genotype_bits = [x for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
+    order = Dict(zip(genotype_bits,1:length(genotype_bits)))
+
+    #Functions to get a different color for each genotype
+    genotypecolor(a) = get(colorschemes[:hsv], order[a.genotype], (1,length(genotypes)+1))
+    genotypecolor_legend(a) = get(colorschemes[:hsv], a, (1,length(genotypes)+1))
+
+    #We make a static plot
+    #figure, _ = abmplot(model;ac = genotypecolor,as=8,am='■',heatarray,heatkwargs)
+
+    #We make a dynamic plot
+    figure, _ = abmplot(model;agent_step! = agent_step!,model_step! = model_step!,ac = genotypecolor,as=0.5)
+
+
+    #We create a legend for the genotypes
+    Legend(figure[1, 2],
+        [MarkerElement(color = genotypecolor_legend(a), marker = '■', markersize = 15, strokecolor = :black) for a in 1:length(genotypes)],
+        genotypes,
+        patchsize = (20, 20), rowgap = 1)
+
+
+    #We display the figure
+    display(figure)
+end
+
+function plot_genotypes(adata,fitness,mode="absolute")
+    #And lastly we can make plots of both the total number of cells of each genotype
+    genotypes = [replace(string(x)," "=>"") for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
+    stacked = stack(adata,genotypes)
+    if mode=="absolute"
+        stacked |>
+        @vlplot(:area, x=:step, y={:value, stack=:zero}, color="variable:n")
+    elseif mode=="relative"
+        #And the relative number of cells of each genotype
+        stacked |>
+        @vlplot(:area, x=:step, y={:value, stack=:normalize}, color="variable:n")
+    else
+        println("Mode not supported")
 end

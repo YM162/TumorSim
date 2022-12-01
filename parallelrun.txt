@@ -1,0 +1,1 @@
+julia -q -p 4 --sysimage build/TumorSim.so
