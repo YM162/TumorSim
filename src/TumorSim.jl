@@ -1,7 +1,7 @@
 module TumorSim
 
 #We export all the functions needed outside of the module
-export create_scenario, simulate, launch_interactive_simulation, plot_genotypes, Treatment, Scenario
+export create_scenario, simulate, launch_interactive_simulation, plot_genotypes, OncoSimulR_rfitness, Treatment, Scenario
 
 #We import everything we need
 using DrWatson
