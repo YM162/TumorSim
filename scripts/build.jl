@@ -18,8 +18,8 @@ Pkg.add("DrWatson")
 Pkg.add("DataFrames")
 Pkg.add(path=tumorsim_path)
 
+rm(build_dir_path,force=true,recursive=true)
 mkpath(build_dir_path)
-try rm(binary_path) catch end
 
 PackageCompiler.create_sysimage(["TumorSim","Agents","DrWatson","DataFrames"]; sysimage_path=binary_path,precompile_execution_file=precompile_path)
 

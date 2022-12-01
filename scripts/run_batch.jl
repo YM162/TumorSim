@@ -1,17 +1,16 @@
+#We load the project
 using DrWatson
 @quickactivate "TumorSim"
-
+#Import dependencies
 using TumorSim
 using Distributed
 using ProgressMeter
-# Here you may include files from the source directory
+#We create the fitness, scenarios and therapies we want to use
 fitness=Dict([0,0,0]=>1, 
                 [1,0,0]=>1.3,
                 [0,1,0]=>1.2,
                 [1,1,0]=>1.5,
                 [1,1,1]=>1.2)
-
-
 
 scenario_0D = create_scenario((1000000),10)
 scenario_1D = create_scenario((1000000,),10,"center")
@@ -27,16 +26,16 @@ treatment = Treatment(3000, 2000, 0, 3, 0.75, false, false)
 parameters = Dict(
     "pr" => 0.027,
     "dr" => 0.015,
-    "mr" => [0.01,0.01],   
-    "scenario" => scenario, 
+    "mr" => [0.001,0.005,0.01,0.025,0.05],   
+    "scenario" => [scenario_0D,scenario_1D,scenario_2D,scenario_3D], 
     "fitness" => fitness,
-    "treatment" => treatment,
+    "treatment" => [adaptive_therapy,continuous_therapy],
     "seed" => 0
 )
 
 parameter_combinations = dict_list(parameters)
 
-steps=10
+steps=1
 results = @showprogress pmap(simulate,parameter_combinations,fill(steps,length(parameter_combinations)))
 
 for (i, d) in enumerate(parameter_combinations)
