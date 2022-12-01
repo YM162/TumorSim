@@ -30,7 +30,7 @@ parameters = Dict(
     "scenario" => [scenario_0D,scenario_1D,scenario_2D,scenario_3D], 
     "fitness" => fitness,
     "treatment" => [adaptive_therapy,continuous_therapy],
-    "seed" => 0
+    "seed" => rand(Int,5)
 )
 
 parameter_combinations = dict_list(parameters)
