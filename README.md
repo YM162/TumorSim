@@ -11,7 +11,7 @@ Simulation of tumoral growth using Agents.jl </br>
 using Pkg;Pkg.add(url="https://github.com/YM162/TumorSim.git")
 ```
 # How to use:
-(Optional) Build a sysimage and launch a julia prompt with it. Enable paralellyzation with -p n_cores
+(Optional) Build a sysimage and launch a julia REPL with it. Enable parallelization with -p n_cores
 ```
 julia build.jl
 julia -q -p 4 --sysimage build/TumorSim.so
