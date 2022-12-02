@@ -4,6 +4,7 @@
         time_alive::Int  # Time the cell has been alive
         near_cells::Number # Number of cells in the neighborhood
         genotype::BitArray # Genotype of the cell
+        phylogeny::Array{Int} # Phylogeny of the cell
 end
 
 #We initialize the model according to some parameters.
@@ -45,7 +46,7 @@ function  model_init(;seed,pr,dr,mr,fitness,scenario,treatment)
         model = ABM(Cell, space;properties, rng) 
         #we create each cell
         for cell in cell_pos
-            add_agent!((cell[1],cell[2],cell[3]),model,0,0,BitArray([false for x in 1:ngenes])) # With this one we use the scenario
+            add_agent!((cell[1],cell[2],cell[3]),model,0,0,BitArray([false for x in 1:ngenes]),[]) # With this one we use the scenario
         end
     else
         space = GridSpace((1,1,1),periodic=false)
@@ -53,7 +54,7 @@ function  model_init(;seed,pr,dr,mr,fitness,scenario,treatment)
         properties=@dict(pr,dr,mr,fitness,wall_pos,wall_matrix,treatment,scenario,current_size)
         model = ABM(Cell, space;properties, rng) 
         for cell in cell_pos
-            add_agent!(model,0,0,BitArray([false for x in 1:ngenes])) # With this one we use the scenario
+            add_agent!(model,0,0,BitArray([false for x in 1:ngenes]),[]) # With this one we use the scenario
         end
     end
 
@@ -135,7 +136,9 @@ end
 function mutate!(agent,model)
     genes=findall(agent.genotype .!=1)
     if genes!=[] && rand(model.rng) < model.mr
-        agent.genotype[rand(model.rng,genes)]=true
+        gene = rand(model.rng,genes)
+        agent.genotype[gene]=true
+        push!(agent.phylogeny,gene)
     end
 end
 
@@ -146,6 +149,7 @@ function reproduce!(agent,model)
     pr = model.pr*model.fitness[agent.genotype]
     pid = agent.pos
     newgenom = copy(agent.genotype)
+    newphylo = copy(agent.phylogeny)
     prob = pr/(get_near!(agent,model)^2)
     if rand(model.rng) < prob/(1+prob)
         if rand(model.rng) < model.treatment.kill_rate
@@ -153,7 +157,7 @@ function reproduce!(agent,model)
                 return true
             end
         end
-        newagent = add_agent!(pid,model,0,0,newgenom)
+        newagent = add_agent!(pid,model,0,0,newgenom,newphylo)
         mutate!(newagent,model)
         kill_non_viable!(newagent, model)
 

@@ -1,5 +1,6 @@
 using GLMakie
 GLMakie.activate!()
+using StatsBase
 
 function launch_interactive_simulation(d::Dict)
     @unpack seed, pr, dr, mr, fitness, scenario, treatment = d
@@ -37,6 +38,12 @@ function simulate(d::Dict,steps)
     step = create_stop_function(steps)
 
     adata, _ = run!(model, agent_step!, model_step!, step; adata = agent_collect)
+    
+    phylogeny = countmap([x.phylogeny for x in allagents(model)])
+    fulld["Phylogeny"] = phylogeny
+
+    fulld["TTP"] = get_TTP(adata,treatment.detecting_size*1.2)
+
     genotypes = [replace(string(x)," "=>"") for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
     pushfirst!(genotypes,"step")
     rename!(adata,genotypes)

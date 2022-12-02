@@ -1,3 +1,5 @@
+#Ideally we should not need this script when we finish all of the tests, because we can just execute them.
+
 using DrWatson
 @quickactivate "TumorSim"
 
@@ -15,8 +17,8 @@ treatment = create_treatment(3000, 2000, 1000, 3, 0.75)
 
 params = Dict(
     "pr" => 0.027,
-    "dr" => 0.5,
-    "mr" => [0.01,0.1],   
+    "dr" => 0.015,
+    "mr" => 0.1,   
     "scenario" => scenario, 
     "fitness" => fitness,
     "treatment" => treatment,
@@ -25,5 +27,5 @@ params = Dict(
 
 dicts = dict_list(params)
 
-steps=100
+steps=1700
 results = pmap(simulate,dicts,fill(steps,length(dicts)))

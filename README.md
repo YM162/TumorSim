@@ -6,7 +6,7 @@ TumorSim.jl
 ***Simulation of tumoral growth in multiple dimensions with a special focus on fitness landscapes and adaptive therapy.***
 
 # How to install
-<b>1.- Clone the git repo:</b>
+<b>1.- Clone the git repo.</b>
 ```bash
 git clone https://github.com/YM162/TumorSim.git
 cd TumorSim
