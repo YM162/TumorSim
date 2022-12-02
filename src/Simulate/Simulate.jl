@@ -1,5 +1,4 @@
-using GLMakie
-GLMakie.activate!()
+
 using StatsBase
 
 function launch_interactive_simulation(d::Dict)
