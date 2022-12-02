@@ -17,8 +17,8 @@ scenario_1D = create_scenario((1000000,),10,"center")
 scenario_2D = create_scenario((1000,1000),10,"center")
 scenario_3D = create_scenario((100,100,100),10,"center")
 
-adaptive_therapy = Treatment(3000, 2000, 1000, 3, 0.75, false, false) 
-continuous_therapy = Treatment(3000, 2000, 0, 3, 0.75, false, false) 
+adaptive_therapy = create_treatment(3000, 2000, 1000, 3, 0.75) 
+continuous_therapy = create_treatment(3000, 2000, 0, 3, 0.75) 
 
 scenario = create_scenario((1,1,1),10,"center")
 treatment = Treatment(3000, 2000, 0, 3, 0.75, false, false)

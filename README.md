@@ -15,7 +15,7 @@ cd TumorSim
 ```bash
 julia scripts/build.jl
 ```
-# How to use:
+# How to use
 <b>1.- (Optional) Launch the sysimage and set the number of cores for paralellization.</b>
 ```bash
 julia -q --sysimage build/TumorSim.so -p 4
@@ -56,13 +56,13 @@ fitness=OncoSimulR_rfitness(g=3,c=1,sd=0.5)
 
 <b>5.- Create a Treatment.</b>
 ```julia
-#Treatment(Detection size, Starting size, Pausing size, Gene of resistance, Killrate, Start with treatment active?,Start with tumor detected?)
+#Treatment(Detection size, Starting size, Pausing size, Gene of resistance, kill_rate)
 
-adaptive_therapy = Treatment(3000, 2000, 1000, 3, 0.75, false, false) 
+adaptive_therapy = create_treatment(3000, 2000, 1000, 3, 0.75) 
 
-continuous_therapy = Treatment(3000, 2000, 0, 3, 0.75, false, false) 
+continuous_therapy = create_treatment(3000, 2000, 0, 3, 0.75) 
 
-#After the Detection size has been reached, treatment cycles starting and pausing at the specified sizes will begin, killing Killrate% of the susceptible cells that try to reproduce.
+#After the Detection size has been reached, treatment cycles starting and pausing at the specified sizes will begin, killing kill_rate% of the susceptible cells that try to reproduce.
 ```
 
 <b>8.- Create a vector of all the scenarios you want to test.</b>
@@ -85,7 +85,7 @@ parameter_combinations = dict_list(parameters)
 ```
 <b>9a.- Run a single simulation.</b>
 ```julia
-#We specify the number of steps each simulation will go through.
+#We specify the number of steps each simulation will go through. The simulation will stop early if all cells die or if we reach 1.5 * treatment.detection_size (resistance was aquired).
 steps=1000
 
 #Get a dataframe with the results of the simulation.

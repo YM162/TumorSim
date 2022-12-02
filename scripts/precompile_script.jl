@@ -10,13 +10,13 @@ fitness=Dict([0,0,0]=>1,
                 [1,1,0]=>1.5,
                 [1,1,1]=>1.2)
 
-scenario = create_scenario((1,1,1),10,"center")
-treatment = Treatment(3000, 2000, 0, 3, 0.75, false, false)
+scenario = create_scenario((100,100,100),10,"center")
+treatment = create_treatment(3000, 2000, 1000, 3, 0.75)
 
 params = Dict(
     "pr" => 0.027,
-    "dr" => 0.015,
-    "mr" => [0.01,0.01],   
+    "dr" => 0.5,
+    "mr" => [0.01,0.1],   
     "scenario" => scenario, 
     "fitness" => fitness,
     "treatment" => treatment,
@@ -25,5 +25,5 @@ params = Dict(
 
 dicts = dict_list(params)
 
-steps=10
+steps=100
 results = pmap(simulate,dicts,fill(steps,length(dicts)))

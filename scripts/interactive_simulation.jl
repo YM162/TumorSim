@@ -13,7 +13,7 @@ fitness=Dict([0,0,0]=>1,
                 [1,1,1]=>1.2)
 
 scenario = create_scenario((100,100,100),10,"center")
-treatment = Treatment(3000, 2000, 1000, 3, 0.75, false, false)
+treatment = create_treatment(3000, 2000, 1000, 3, 0.75)
 
 parameters = Dict(
     "pr" => 0.027,

@@ -105,6 +105,23 @@ function model_step!(model)
     end
 end
 
+#We stop if any of this conditions are met.
+function create_stop_function(steps)
+    function step(model,s)
+        if length(model.agents)==0
+            return true
+        end
+        if length(model.agents)>=model.treatment.detecting_size*1.5 && model.treatment.detected
+            return true
+        end
+        if s==steps
+            return true
+        end
+            return false
+    end
+    return step
+end
+
 #If the cell is susceptible to the treatment, and treatment is active, it dies. Returns true if the cell has dies
 function treat!(agent,model)
     if model.treatment.active && agent.genotype[model.treatment.resistance_gene]!=1

@@ -32,9 +32,11 @@ function simulate(d::Dict,steps)
     
     fulld = copy(d)
     agent_collect = [(:genotype, f) for f in genotype_fraction_function_generator(fitness)]
-    model = model_init(pr=0.027, dr=0.015, mr=0.01, scenario=scenario, fitness=fitness,treatment=treatment, seed=0)
-    
-    adata, _ = run!(model, agent_step!, model_step!, steps; adata = agent_collect)
+    model = model_init(pr=pr, dr=dr, mr=mr, scenario=scenario, fitness=fitness,treatment=treatment, seed=seed)
+    #We stop (not a typo, stop != step) early if some conditions are met. See definition of create_stop_function in TumorModel.jl
+    step = create_stop_function(steps)
+
+    adata, _ = run!(model, agent_step!, model_step!, step; adata = agent_collect)
     genotypes = [replace(string(x)," "=>"") for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
     pushfirst!(genotypes,"step")
     rename!(adata,genotypes)
