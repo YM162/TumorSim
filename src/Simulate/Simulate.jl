@@ -34,8 +34,8 @@ function simulate(d::Dict,steps)
     fulld = copy(d)
     agent_collect = [(:genotype, f) for f in genotype_fraction_function_generator(fitness)]
     model = model_init(pr=pr, dr=dr, mr=mr, scenario=scenario, fitness=fitness,treatment=treatment, seed=seed)
-    #We stop (not a typo, stop != step) early if some conditions are met. See definition of create_stop_function in TumorModel.jl
-    step = create_stop_function(steps)
+    #We stop (not a typo, stop != step) early if a size of max or 0 is reached
+    step = create_stop_function(steps,treatment.detecting_size*1.5)
 
     adata, _ = run!(model, agent_step!, model_step!, step; adata = agent_collect)
     
@@ -43,11 +43,14 @@ function simulate(d::Dict,steps)
     fulld["Phylogeny"] = phylogeny
 
     fulld["TTP"] = get_TTP(adata,treatment.detecting_size*1.2)
+    fulld["Diversity"] = get_diversity(adata)
 
     genotypes = [replace(string(x)," "=>"") for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
     pushfirst!(genotypes,"step")
     rename!(adata,genotypes)
     fulld["Genotypes"]=adata
+
+    
 
     return fulld
 end

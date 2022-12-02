@@ -107,12 +107,12 @@ function model_step!(model)
 end
 
 #We stop if any of this conditions are met.
-function create_stop_function(steps)
+function create_stop_function(steps,stop_size)
     function step(model,s)
         if length(model.agents)==0
             return true
         end
-        if length(model.agents)>=model.treatment.detecting_size*1.5 && model.treatment.detected
+        if length(model.agents)>=stop_size && model.treatment.detected
             return true
         end
         if s==steps
