@@ -1,7 +1,8 @@
 TumorSim.jl
 ===========
-![CI build](https://github.com/YM162/TumorSim/actions/workflows/CI.yml/badge.svg)
-![Codecov](https://app.codecov.io/gh/YM162/TumorSim)
+![Build Status](https://github.com/YM162/TumorSim/actions/workflows/CI.yml/badge.svg)
+[![codecov](https://codecov.io/gh/YM162/TumorSim/branch/main/graph/badge.svg?token=6YLRTP584L)](https://codecov.io/gh/YM162/TumorSim)
+
 ***Simulation of tumoral growth in multiple dimensions with a special focus on fitness landscapes and adaptive therapy.***
 
 # How to install
