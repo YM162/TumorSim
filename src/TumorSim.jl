@@ -14,8 +14,6 @@ using ColorSchemes
 using DataStructures
 using DataFrames
 
-using GLMakie
-GLMakie.activate!()
 
 #We include every file in the module.
 include("Fitness/Fitness.jl")

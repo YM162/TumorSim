@@ -1,8 +1,8 @@
 using VegaLite
 
-function plot_genotypes(adata,fitness,mode="absolute")
+function plot_genotypes(adata,mode="absolute")
     #And lastly we can make plots of both the total number of cells of each genotype
-    genotypes = [replace(string(x)," "=>"") for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
+    genotypes = names(adata)[2:end]
     stacked = stack(adata,genotypes)
     if mode=="absolute"
         stacked |>

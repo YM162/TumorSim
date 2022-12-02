@@ -1,7 +1,7 @@
 
 using StatsBase
 
-function launch_interactive_simulation(d::Dict)
+function launch_interactive_simulation(d::Dict) #Broken ATM until i figure out the GLMakie problems.
     @unpack seed, pr, dr, mr, fitness, scenario, treatment = d
 
     model = model_init(pr=0.027, dr=0.015, mr=0.01, scenario=scenario, fitness=fitness,treatment=treatment, seed=0)
@@ -49,7 +49,13 @@ function simulate(d::Dict,steps)
     rename!(adata,genotypes)
     fulld["Genotypes"]=adata
 
-    
+    push!(fulld,"s_dims"=>string((scenario.x,scenario.y,scenario.z)))
+    push!(fulld,"s_initial_cells"=>length(scenario.cell_pos))
 
+    push!(fulld,"t_detecting_size"=>treatment.detecting_size)
+    push!(fulld,"t_starting_size"=>treatment.starting_size)
+    push!(fulld,"t_pausing_size"=>treatment.pausing_size)
+    push!(fulld,"t_resistance_size"=>treatment.resistance_gene)
+    push!(fulld,"t_kill_rate"=>treatment.kill_rate)
     return fulld
 end

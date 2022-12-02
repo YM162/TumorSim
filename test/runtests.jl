@@ -119,13 +119,11 @@ dicts = dict_list(params)
 steps=3000
 results = pmap(simulate,dicts,fill(steps,length(dicts)))
 adata1 = results[1]["Genotypes"]
-println(adata1)
 adata2 = results[2]["Genotypes"]
-println(adata2)
 
 @testset "Simulate tests" begin
     @test length(results) == 2
-    @test length(results[1]) == 11
+    @test length(results[1]) == 18
     @test length(eachcol(adata1)) == 6
     @test length(eachrow(adata1)) != 0
     @test length(eachrow(adata1)) > length(eachrow(adata2))
@@ -150,6 +148,8 @@ end
     @test diversity[!,"evenness"][500] < 1
 
 end
+
+using TumorSim
 
 ti = time() - ti
 println("\nTest took total time of:")
