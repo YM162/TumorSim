@@ -21,9 +21,20 @@ scenario_3D = create_scenario((100,100,100),10,"center")
 adaptive_therapy = create_treatment(3000, 2000, 1000, 3, 0.75) 
 continuous_therapy = create_treatment(3000, 2000, 0, 3, 0.75) 
 
+#This would be cool to do, but we need the cluster
+parameters = Dict(
+    "pr" => [0.005,0.01,0.0015,0.02,0.025],
+    "dr" => [0,0.25,0.5,0.75],
+    "mr" => [0.001,0.005,0.01,0.015,0.03,0.05],   
+    "scenario" => scenario_3D, 
+    "fitness" => fitness,
+    "treatment" => [adaptive_therapy,continuous_therapy],
+    "seed" => map(abs,rand(Int64,100))
+)
+#we can do this instead
 parameters = Dict(
     "pr" => 0.027,
-    "dr" => 0.015,
+    "dr" => 0.55,
     "mr" => 0.01,   
     "scenario" => scenario_3D, 
     "fitness" => fitness,

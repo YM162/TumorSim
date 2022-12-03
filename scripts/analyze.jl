@@ -8,7 +8,7 @@ using Statistics
 using HypothesisTests
 
 df = collect_results(datadir("simulations"))
-#print(df)
+print(df)
 println("Adaptive therapy:")
 adaptive_TTP = filter(n -> n !=-1,filter("t_pausing_size" => n -> n == 1000, df)[!,"TTP"])
 println("Mean -",mean(adaptive_TTP))
