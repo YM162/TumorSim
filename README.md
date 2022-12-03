@@ -70,13 +70,13 @@ continuous_therapy = create_treatment(3000, 2000, 0, 3, 0.75)
 #We need to specify pr (Base proliferation rate), dr (Death rate) and mr (Mutation rate)
 
 parameters = Dict(
-    "pr" => 0.027,
-    "dr" => 0.55,
-    "mr" => [0.001,0.005,0.01,0.025,0.05],   
+    "pr" => [0.01,0.02,0.03,0,04,0.05],
+    "dr" => [0,0.2,0.4,0.6,0.8],
+    "mr" => [0.001,0.005,0.01,0.05,0.1],   
     "scenario" => [scenario_0D,scenario_1D,scenario_2D,scenario_3D], 
     "fitness" => fitness,
     "treatment" => [adaptive_therapy,continuous_therapy],
-    "seed" => rand(Int,5)
+    "seed" => map(abs,rand(Int64,1000))
 )
 
 #DrWatson's dict_list allows us to expand the vectors in our original dict to produce a list with all of the possible combinations of parameters.
@@ -94,8 +94,6 @@ result_df = simulate(parameter_combinations[1],steps)
 #We save it to disk using DrWatson's safesave and savename functions.
 safesave(datadir("simulations", savename(parameter_combinations[1], "jld2")),result_df)
 
-#Alternatively launch an interactive GLMakie window to watch the simulation it in real time.
-launch_interactive_simulation(parameter_combinations[1])
 ```
 <b>9b.- Run all the simulations at once using parallelization.</b>
 ```julia
@@ -108,4 +106,8 @@ results = @showprogress pmap(simulate,parameter_combinations,fill(steps,length(p
 for (i, d) in enumerate(parameter_combinations)
     safesave(datadir("simulations", savename(d, "jld2")), results[i])
 end
+```
+<b>10.- Collect the data from all the simulations you saved.</b>
+```julia
+df = collect_results(datadir("simulations"))
 ```

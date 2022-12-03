@@ -36,6 +36,7 @@ fitness5=Dict([0,0,0]=>1,
                 [0,1,0]=>1.2,
                 [1,1,0]=>1.5,
                 [1,1,1]=>1.5)
+                
 #We test the dimensionality.
 scenario_0D = create_scenario((1000000),10)
 scenario_1D = create_scenario((1000000,),10,"center")
