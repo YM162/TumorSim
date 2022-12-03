@@ -188,7 +188,7 @@ end
 
 #die, with a probability that increases with the number of cells that are in its space. returns true if the cell has died.
 function die!(agent, model)
-    prob = model.dr*(get_near!(agent,model)^2)
+    prob = model.pr*model.dr*(get_near!(agent,model)^2)
     if rand(model.rng) < prob/(1+prob)
         kill_agent!(agent, model)
         return true
