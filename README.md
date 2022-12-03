@@ -71,7 +71,7 @@ continuous_therapy = create_treatment(3000, 2000, 0, 3, 0.75)
 
 parameters = Dict(
     "pr" => 0.027,
-    "dr" => 0.015,
+    "dr" => 0.55,
     "mr" => [0.001,0.005,0.01,0.025,0.05],   
     "scenario" => [scenario_0D,scenario_1D,scenario_2D,scenario_3D], 
     "fitness" => fitness,

@@ -79,7 +79,7 @@ end
     treatment = create_treatment(3000,2000,1000,3,0.75)
     scenario = create_scenario(10,5)
     fitness=Dict([0,0,0]=>1, [1,0,0]=>1.3)
-    model = model_init(pr=0.027, dr=0.015, mr=0.01, scenario=scenario, fitness=fitness,treatment=treatment, seed=0)
+    model = model_init(pr=0.027, dr=0.55, mr=0.01, scenario=scenario, fitness=fitness,treatment=treatment, seed=0)
     agent = collect(allagents(model))[1]
     @test nagents(model) == 5
     @test agent.time_alive == 0
@@ -88,7 +88,7 @@ end
     @test get_near!(agent,model) ≈ 1.220971404849699
     #3D
     scenario = create_scenario((10,10,10),5)
-    model = model_init(pr=0.027, dr=0.015, mr=0.01, scenario=scenario, fitness=fitness,treatment=treatment, seed=0)
+    model = model_init(pr=0.027, dr=0.55, mr=0.01, scenario=scenario, fitness=fitness,treatment=treatment, seed=0)
     agent = collect(allagents(model))[1]
     @test nagents(model) == 5
     @test agent.time_alive == 0
@@ -107,7 +107,7 @@ fitness=Dict([0,0,0]=>1,
 
 params = Dict(
     "pr" => 0.027,
-    "dr" => [0.015,0.5],
+    "dr" => [0.55,2],
     "mr" => 0.1,
     "scenario" => scenario, 
     "fitness" => fitness,
