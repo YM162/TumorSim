@@ -21,17 +21,18 @@ scenario_3D = create_scenario((100,100,100),10,"center")
 adaptive_therapy = create_treatment(3000, 2000, 1000, 3, 0.75) 
 continuous_therapy = create_treatment(3000, 2000, 0, 3, 0.75) 
 
-#This would be cool to do, but we need the cluster
+#This would be cool to do, but we need the cluster, because its 100.000 simulations for each fitness landscape. Would take almost a week in my computer.
 parameters = Dict(
     "pr" => [0.005,0.01,0.0015,0.02,0.025],
-    "dr" => [0,0.25,0.5,0.75],
-    "mr" => [0.001,0.005,0.01,0.015,0.03,0.05],   
-    "scenario" => scenario_3D, 
+    "dr" => [0,0.2,0.4,0.6,0.8],
+    "mr" => [0.001,0.005,0.01,0.05,0.1],   
+    "scenario" => [scenario_0D,scenario_1D,scenario_2D,scenario_3D], 
     "fitness" => fitness,
     "treatment" => [adaptive_therapy,continuous_therapy],
     "seed" => map(abs,rand(Int64,100))
 )
-#we can do this instead
+
+#we can do this instead. In my potato computer each simulation takes ~5s
 parameters = Dict(
     "pr" => 0.027,
     "dr" => 0.55,
