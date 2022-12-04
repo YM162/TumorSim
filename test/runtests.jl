@@ -50,18 +50,36 @@ end
     @test scenario.y == 1
     @test scenario.z == 1
     @test length(scenario.cell_pos) == 4
+
+    scenario = create_scenario((40,),[(1,)])
+    @test scenario.x == 40
+    @test scenario.y == 1
+    @test scenario.z == 1
+    @test length(scenario.cell_pos) == 1
     #2D
     scenario = create_scenario((15,20),5)
     @test scenario.x == 15
     @test scenario.y == 20
     @test scenario.z == 1
     @test length(scenario.cell_pos) == 5
+
+    scenario = create_scenario((15,20),[(1,1),(2,2)])
+    @test scenario.x == 15
+    @test scenario.y == 20
+    @test scenario.z == 1
+    @test length(scenario.cell_pos) == 2
     #3D
     scenario = create_scenario((16,17,18),19)
     @test scenario.x == 16
     @test scenario.y == 17
     @test scenario.z == 18
     @test length(scenario.cell_pos) == 19
+
+    scenario = create_scenario((16,17,18),[(1,1,1),(2,2,2),(3,3,3)])
+    @test scenario.x == 16
+    @test scenario.y == 17
+    @test scenario.z == 18
+    @test length(scenario.cell_pos) == 3
 end
 
 @testset "Treatment tests" begin
