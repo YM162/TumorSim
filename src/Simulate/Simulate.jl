@@ -1,6 +1,3 @@
-
-using StatsBase
-
 function simulate(d::Dict,steps::Int)
     @unpack seed, pr, dr, mr, fitness, scenario, treatment = d
     

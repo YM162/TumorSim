@@ -14,4 +14,4 @@ scenario_3D = create_scenario((100,100,100),10,"center")
 adaptive_therapy = create_treatment(3000, 2000, 1000, 3, 0.75) 
 
 
-@benchmark simulate(parameters,3000) setup=(parameters = Dict("pr" => 0.027, "dr" => 0.55, "mr" => 0.01, "scenario" => scenario_3D, "fitness" => fitness4, "treatment" => adaptive_therapy, "seed" => abs(rand(Int64)))) seconds=300
+@benchmark simulate(parameters,3000) setup=(parameters = Dict("pr" => 0.027, "dr" => 0.55, "mr" => 0.01, "scenario" => scenario_3D, "fitness" => fitness4, "treatment" => adaptive_therapy, "seed" => abs(rand(Int64)))) seconds=1

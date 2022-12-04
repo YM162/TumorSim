@@ -1,7 +1,3 @@
-using StatsBase
-using DataFrames
-
-
 function get_TTP(adata::DataFrame,TTP_size::Int64)
     for row in eachrow(adata)
         tumor_size::Int = sum(row[2:end])
