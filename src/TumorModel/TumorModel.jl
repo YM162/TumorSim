@@ -8,7 +8,7 @@
 end
 
 #We initialize the model according to some parameters.
-function  model_init(;seed,pr,dr,mr,fitness,scenario,treatment)
+function  model_init(;seed::Int64,pr::Float64,dr::Float64,mr::Float64,fitness::Dict{Vector{Int64},Real},scenario::Scenario,treatment::Treatment)
     #We need to do this to reuse the treatment in paramscan
     treatment = Treatment(treatment.detecting_size,
                             treatment.starting_size,
@@ -23,9 +23,9 @@ function  model_init(;seed,pr,dr,mr,fitness,scenario,treatment)
     z = scenario.z
     cell_pos = scenario.cell_pos
     wall_pos = scenario.wall_pos
-    current_size=length(cell_pos)
+    current_size::Int=length(cell_pos)
 
-    ngenes=length(collect(keys(fitness))[1])
+    ngenes::Int=length(collect(keys(fitness))[1])
     
     fitness = Dict(zip([BitArray(i) for i in keys(fitness)],[fitness[i] for i in keys(fitness)]))
     fitness=DefaultDict(0,fitness)
@@ -65,8 +65,8 @@ end
 function get_near!(agent,model)
     if model.scenario.z==0 #If we are in 0D
 
-        bin = Binomial(length(model.agents),1/model.scenario.x)
-        return (length(model.agents)/model.scenario.x)/(1-pdf(bin,0)) #We calculate the mean number of cells in each cell´s space using a binomial distribution.
+        bin = Binomial(nagents(model),1/model.scenario.x)
+        return (nagents(model)/model.scenario.x)/(1-pdf(bin,0)) #We calculate the mean number of cells in each cell´s space using a binomial distribution.
 
     end
     return length(ids_in_position(agent, model))
@@ -90,7 +90,7 @@ end
 
 #We use the model step to evaluate the treatment
 function model_step!(model)
-    current_size = length(model.agents)
+    current_size::Int = nagents(model)
     model.current_size = current_size
     if model.treatment.detected
         if current_size < model.treatment.pausing_size
@@ -107,12 +107,12 @@ function model_step!(model)
 end
 
 #We stop if any of this conditions are met.
-function create_stop_function(steps,stop_size)
+function create_stop_function(steps::Int,stop_size::Int)
     function step(model,s)
-        if length(model.agents)==0
+        if nagents(model)==0
             return true
         end
-        if length(model.agents)>=stop_size && model.treatment.detected
+        if nagents(model)>=stop_size && model.treatment.detected
             return true
         end
         if s==steps
@@ -136,7 +136,7 @@ end
 function mutate!(agent,model)
     genes=findall(agent.genotype .!=1)
     if genes!=[] && rand(model.rng) < model.mr
-        gene = rand(model.rng,genes)
+        gene::Int = rand(model.rng,genes)
         agent.genotype[gene]=true
         push!(agent.phylogeny,gene)
     end
@@ -148,8 +148,8 @@ end
 function reproduce!(agent,model)
     pr = model.pr*model.fitness[agent.genotype]
     pid = agent.pos
-    newgenom = copy(agent.genotype)
-    newphylo = copy(agent.phylogeny)
+    newgenom::BitArray = copy(agent.genotype)
+    newphylo::Array{Int64} = copy(agent.phylogeny)
     prob = pr/(get_near!(agent,model)^2)
     if rand(model.rng) < prob/(1+prob)
         if rand(model.rng) < model.treatment.kill_rate
@@ -172,8 +172,8 @@ end
 #Move every cell to a random nearby space ONLY if your space is "crowded", crowded for example is more than 1 cell in your space 
 function move!(agent, model)
     pos = agent.pos
-    nearby = [x for x in nearby_positions(agent,model,1)]
-
+    nearby =  collect(nearby_positions(agent,model,1))
+    
     setdiff!(nearby,model.wall_pos)
     nearby_density = [1/(length(ids_in_position(x,model))+1) for x in nearby]
     

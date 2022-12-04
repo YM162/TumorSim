@@ -1,11 +1,11 @@
 
 #We define the scenario and the functions to create it using multiple dispatch.
 struct Scenario
-    x::Int
-    y::Int
-    z::Int
-    cell_pos::Vector
-    wall_pos::Vector
+    x::Int64
+    y::Int64
+    z::Int64
+    cell_pos::Vector{Tuple}
+    wall_pos::Vector{Tuple}
 end
 
 #0D

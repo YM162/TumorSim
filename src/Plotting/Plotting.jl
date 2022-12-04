@@ -1,6 +1,6 @@
 using VegaLite
 
-function plot_genotypes(adata,mode="absolute")
+function plot_genotypes(adata::DataFrame,mode::String="absolute")
     #And lastly we can make plots of both the total number of cells of each genotype
     genotypes = names(adata)[2:end]
     stacked = stack(adata,genotypes)

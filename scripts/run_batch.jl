@@ -55,10 +55,9 @@ parameters = Dict(
     "scenario" => [scenario_0D,scenario_1D,scenario_2D,scenario_3D], 
     "fitness" => [fitness1,fitness2,fitness3,fitness4,fitness5],
     "treatment" => [adaptive_therapy,continuous_therapy],
-    "seed" => map(abs,rand(Int64,1000))
+    "seed" => map(abs,rand(Int64,1))
 )
 
-#we can do this instead. In my potato computer each simulation takes ~5s
 parameters = Dict(
     "pr" => 0.027,
     "dr" => 0.55,
@@ -66,9 +65,8 @@ parameters = Dict(
     "scenario" => scenario_3D, 
     "fitness" => fitness4,
     "treatment" => [adaptive_therapy,continuous_therapy],
-    "seed" => map(abs,rand(Int64,5))
+    "seed" => map(abs,rand(Int64,10))
 )
-
 parameter_combinations = dict_list(parameters)
 
 steps=3000

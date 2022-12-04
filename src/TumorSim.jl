@@ -17,7 +17,7 @@ using DataFrames
 
 #We include every file in the module.
 include("Fitness/Fitness.jl")
-include("Fitness/OncoSimulR.jl")
+
 include("Scenario/Scenario.jl")
 include("Treatment/Treatment.jl")
 
