@@ -1,6 +1,3 @@
-#We include the OncoSimulR interface
-#include("OncoSimulR.jl")
-
 #A generator that returns a list of functions that each get the number of cells of each genotype given a number of genes.
 function genotype_fraction_function_generator(fitness::Dict{Vector{Int64},Real},)
     functions = []
