@@ -45,37 +45,40 @@ end
     @test scenario.z == 0
     @test length(scenario.cell_pos) == 3
     #1D
-    scenario = create_scenario((40,),4)
+    scenario = create_scenario((40,),4,"random",[(10,)])
+    scenario = create_scenario((40,),4,"center",[(10,)])
     @test scenario.x == 40
     @test scenario.y == 1
     @test scenario.z == 1
     @test length(scenario.cell_pos) == 4
 
-    scenario = create_scenario((40,),[(1,)])
+    scenario = create_scenario((40,),[(1,)],[(5,)])
     @test scenario.x == 40
     @test scenario.y == 1
     @test scenario.z == 1
     @test length(scenario.cell_pos) == 1
     #2D
-    scenario = create_scenario((15,20),5)
+    scenario = create_scenario((15,20),5,"random",[(1,1)])
+    scenario = create_scenario((15,20),5,"center",[(1,1)])
     @test scenario.x == 15
     @test scenario.y == 20
     @test scenario.z == 1
     @test length(scenario.cell_pos) == 5
 
-    scenario = create_scenario((15,20),[(1,1),(2,2)])
+    scenario = create_scenario((15,20),[(1,1),(2,2)],[(5,5)])
     @test scenario.x == 15
     @test scenario.y == 20
     @test scenario.z == 1
     @test length(scenario.cell_pos) == 2
     #3D
-    scenario = create_scenario((16,17,18),19)
+    scenario = create_scenario((16,17,18),19,"random",[(1,1,1)])
+    scenario = create_scenario((16,17,18),19,"center",[(1,1,1)])
     @test scenario.x == 16
     @test scenario.y == 17
     @test scenario.z == 18
     @test length(scenario.cell_pos) == 19
 
-    scenario = create_scenario((16,17,18),[(1,1,1),(2,2,2),(3,3,3)])
+    scenario = create_scenario((16,17,18),[(1,1,1),(2,2,2),(3,3,3)],[(5,5,5)])
     @test scenario.x == 16
     @test scenario.y == 17
     @test scenario.z == 18
@@ -93,7 +96,6 @@ end
 
 @testset "TumorModel tests" begin
     #0D init
-    #3D
     treatment = create_treatment(3000,2000,1000,3,0.75)
     scenario = create_scenario(10,5)
     fitness=Dict([0,0,0]=>1, [1,0,0]=>1.3)
@@ -105,7 +107,7 @@ end
     @test agent.phylogeny == []
     @test get_near!(agent,model) ≈ 1.220971404849699
     #3D
-    scenario = create_scenario((10,10,10),5)
+    scenario = create_scenario((10,10,10),5,"center",[(1,1,1)])
     model = model_init(pr=0.027, dr=0.55, mr=0.01, scenario=scenario, fitness=fitness,treatment=treatment, seed=0)
     agent = collect(allagents(model))[1]
     @test nagents(model) == 5
@@ -116,7 +118,7 @@ end
 end
 #Prepare a simulation
 treatment = create_treatment(3000,2000,1000,3,0.75)
-scenario = create_scenario((100,100,100),5)
+scenario = create_scenario((100,100,100),5,"center",[(1,1,1)])
 fitness=Dict([0,0,0]=>1, 
             [1,0,0]=>1.3,
             [0,1,0]=>1.2,

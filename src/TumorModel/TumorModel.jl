@@ -37,11 +37,31 @@ function  model_init(;seed::Int64,pr::Float64,dr::Float64,mr::Float64,fitness::D
 
         #we create the walls visualization matrix
         wall_matrix=zeros(Int8, x, y, z)
-        for t in wall_pos
-            i,j,k=t
-            wall_matrix[i,j,k]=1
+
+        #1D
+        if typeof(wall_pos)==Tuple{Int64}
+            for t in wall_pos
+                (i,)=t
+                wall_matrix[i,1,1]=1
+            end
         end
 
+        #2D
+        if typeof(wall_pos)==Tuple{Int64,Int64}
+            for t in wall_pos
+                (i,j)=t
+                wall_matrix[i,j,1]=1
+            end
+        end
+
+        #3D
+        if typeof(wall_pos)==Tuple{Int64,Int64,Int64}
+            for t in wall_pos
+                i,j,k=t
+                wall_matrix[i,j,k]=1
+            end
+        end
+        
         properties=@dict(pr,dr,mr,fitness,wall_pos,wall_matrix,treatment,scenario,current_size)
         model = ABM(Cell, space;properties, rng) 
         #we create each cell
