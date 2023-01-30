@@ -1,7 +1,7 @@
 module TumorSim
 
 #We export all the functions needed outside of the module
-export create_scenario, create_treatment, simulate, launch_interactive_simulation, plot_genotypes, OncoSimulR_rfitness, get_TTP, get_diversity, Treatment, Scenario
+export create_scenario, create_treatment, simulate, launch_interactive_simulation, plot_genotypes, OncoSimulR_rfitness, get_TTP, get_diversity, Treatment, Scenario, launch_dashboard
 
 #We import everything we need
 using DrWatson
@@ -22,5 +22,7 @@ include("TumorModel/TumorModel.jl")
 include("Simulate/Simulate.jl")
 
 include("Analysis/Analysis.jl")
+
+include("Dashboard/Dashboard.jl")
 
 end
