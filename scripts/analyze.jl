@@ -32,7 +32,7 @@ adaptive_TTP = filter(n -> n !=-1,adaptive[!,"TTP"])
 println("Mean ",mean(adaptive_TTP))
 println("Continuous therapy:")
 continuous = filter("t_pausing_size" => n -> n == 0, df)
-continuous_TTP = filter(n -> n !=-1,adaptive[!,"TTP"])
+continuous_TTP = filter(n -> n !=-1,continuous[!,"TTP"])
 println("Mean ",mean(continuous_TTP))
 
 println("t-test p-value:")

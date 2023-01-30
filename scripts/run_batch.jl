@@ -65,8 +65,9 @@ parameters = Dict(
     "scenario" => scenario_3D, 
     "fitness" => fitness4,
     "treatment" => [adaptive_therapy,continuous_therapy],
-    "seed" => map(abs,rand(Int64,10))
+    "seed" => map(abs,rand(Int64,1000))
 )
+
 parameter_combinations = dict_list(parameters)
 
 steps=3000
