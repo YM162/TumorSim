@@ -1,20 +1,24 @@
-#Build with a lot of references from https://github.com/GenieFramework/StippleDemos
+#Built with a lot of references from https://github.com/GenieFramework/StippleDemos
 
-using Distributed
-
-@everywhere using Stipple, StipplePlotly, StippleUI
-@everywhere using DataFrames
-@everywhere using Statistics
+using Stipple, StipplePlotly, StippleUI, Genie, GenieFramework
+using DataFrames
+using Statistics
+using JLD2
 
 @reactive mutable struct HeatPages <: ReactiveModel
 
-
+    
     simulate_text::R{String} = "Simulate!"
     value::R{Int} = 0
+    value1::R{Int} = 0
+    value2::R{Int} = 0
     click::R{Int} = 0
 
     completed_simulations::R{Int} = 0
-    total_simulations::R{Int} = 4320
+    total_simulations::R{Int} = 3168
+    
+    loaded_simulations::R{Int} = 0
+    simulations::R{DataFrame} = DataFrame()
 
     scenario_list::R{Vector{Symbol}} = [:_0D, :_1D, :_2D, :_3D]
     scenario::R{Symbol} = :_2D
@@ -36,7 +40,7 @@ using Distributed
                                 
     pr::R{RangeData{Int64}} = RangeData(20:35)
     dr::R{RangeData{Int64}} = RangeData(350:750)
-    mr::R{RangeData{Int64}} = RangeData(0:25)
+    mr::R{RangeData{Int64}} = RangeData(10:25)
 
     repetitions::R{Int64} = 10
 
@@ -53,9 +57,9 @@ end
 
 function tumorPlot(model::HeatPages,name) 
     if name == "Continuous therapy"
-        data = filter((row) -> row["t_pausing_size"] ==0,model.df[])
+        data = filter((row) -> row["t_pausing_size"] ==0,model.simulations[])
     elseif name == "Adaptive therapy"
-        data = filter((row) -> row["t_pausing_size"] ==1000,model.df[]) #Hay que añadir la t_pausing_size a las variables para cambiarlo dependiendo del detecting size
+        data = filter((row) -> row["t_pausing_size"] ==1000,model.simulations[]) #Hay que añadir la t_pausing_size a las variables para cambiarlo dependiendo del detecting size
     end
 
     x = sort(unique(data[!, string(model.x_variable[])]))
@@ -122,16 +126,46 @@ function ui(model::HeatPages)
 
         for chunk in Iterators.partition(parameter_combinations, 10)
             result_list = pmap(simulate,chunk,fill(3000,length(chunk)))
-            for results in result_list
-                push!(model.df[], [results["mr"], results["pr"], results["dr"], results["TTP"], results["t_pausing_size"]])
-            end
+
+            append!(model.simulations[],DataFrame(result_list)) #Creo que casca aquí
             model.completed_simulations[] += length(chunk)
             model.plot_data[] = [tumorPlot(model,"Continuous therapy"),tumorPlot(model,"Adaptive therapy")]
         end
 
         model.plot_data[] = [tumorPlot(model,"Continuous therapy"),tumorPlot(model,"Adaptive therapy")]
-        println(model.df[])
+
         model.simulate_text[] = "Simulate!"
+    end
+
+    onany(model.value1) do (_...)
+        #Save data
+        println("Saving $(length(model.simulations[])) simulations")
+        df = model.simulations[]
+
+        filepath = datadir("simulations","simulations_"*Dates.format(now(),"d.m.yyyy.H.M.S.s")*".jld2")
+
+        jldopen(filepath, "w") do file
+            file["df"] = df
+        end;
+    end
+
+    onany(model.simulations) do (_...)
+        model.loaded_simulations[] = length(eachrow(model.simulations[]))
+    end
+    
+    onany(model.value2) do (_...)
+        #Load data
+        filepath = datadir("simulations", "simulations_2.2.2023.21.10.8.574.jld2")
+
+        collect_df = DataFrame()
+
+        jldopen(filepath) do file
+            collect_df = file["df"]
+        end
+
+        append!(model.simulations[],collect_df)
+
+        model.plot_data[] = [tumorPlot(model,"Continuous therapy"),tumorPlot(model,"Adaptive therapy")]
     end
 
     onany(model.dr, model.pr, model.mr, model.scenario, model.repetitions) do (_...)
@@ -210,7 +244,22 @@ function ui(model::HeatPages)
                         Stipple.select(:scenario; options=:scenario_list)
                     ]
                 )])
-            row([
+                row([
+                    btn("Save", color="primary", textcolor="black", @click("value1 += 1"), [
+                        tooltip(contentclass="bg-indigo", contentstyle="font-size: 16px",
+                            style="offset: 10px 10px", "Save current simulations")])
+                    btn("Load", color="primary", textcolor="black", @click("value2 += 1"), [
+                        tooltip(contentclass="bg-indigo", contentstyle="font-size: 16px",
+                            style="offset: 10px 10px", "Load all simulations")])
+                    cell(
+                        class="st-module",
+                        [
+                            h6(["Currently loaded simulations: ",
+                                GenieFramework.span(model.loaded_simulations, @text(:loaded_simulations))
+                                ])
+                        ])
+                ])
+                row([
                 btn(model.simulate_text[], color="primary", textcolor="black", @click("value += 1"), [
                     tooltip(contentclass="bg-indigo", contentstyle="font-size: 16px",
                         style="offset: 10px 10px", "Click the button to start simulation")])

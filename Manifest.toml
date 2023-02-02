@@ -2,7 +2,7 @@
 
 julia_version = "1.8.2"
 manifest_format = "2.0"
-project_hash = "5726745ec50bdafc8158c1d926d600aa80138284"
+project_hash = "0ce2d165fcf32947cc01dda74f5f421e7ef4852d"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -830,9 +830,9 @@ version = "1.0.0"
 
 [[deps.JLD2]]
 deps = ["FileIO", "MacroTools", "Mmap", "OrderedCollections", "Pkg", "Printf", "Reexport", "TranscodingStreams", "UUIDs"]
-git-tree-sha1 = "ec8a9c9f0ecb1c687e34c1fda2699de4d054672a"
+git-tree-sha1 = "c3244ef42b7d4508c638339df1bdbf4353e144db"
 uuid = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
-version = "0.4.29"
+version = "0.4.30"
 
 [[deps.JLLWrappers]]
 deps = ["Preferences"]
@@ -857,6 +857,12 @@ deps = ["HTTP", "JSON", "URIs"]
 git-tree-sha1 = "8d928db71efdc942f10e751564e6bbea1e600dfe"
 uuid = "7d188eb4-7ad8-530c-ae41-71a32a6d4692"
 version = "1.0.1"
+
+[[deps.JSONTables]]
+deps = ["JSON3", "StructTypes", "Tables"]
+git-tree-sha1 = "13f7485bb0b4438bb5e83e62fcadc65c5de1d1bb"
+uuid = "b9914132-a727-11e9-1322-f18e41205b0b"
+version = "1.0.3"
 
 [[deps.JpegTurbo]]
 deps = ["CEnum", "FileIO", "ImageCore", "JpegTurbo_jll", "TOML"]

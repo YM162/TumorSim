@@ -1,8 +1,7 @@
 using Distributed
+using DrWatson
+@quickactivate "TumorSim"
 
-@everywhere using DrWatson
-@everywhere @quickactivate "TumorSim"
+using TumorSim
 
-@everywhere using TumorSim
-
-launch_dashboard()
+include(srcdir("Dashboard/index.jl"))

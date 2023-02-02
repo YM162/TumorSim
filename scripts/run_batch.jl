@@ -6,6 +6,9 @@ using Distributed
 @everywhere using TumorSim
 
 using ProgressMeter
+using JLD2
+using DataFrames
+using Dates
 #With the same fitness we can change the cost of resistance
 fitness1=Dict([0,0,0]=>1, 
                 [1,0,0]=>1.3,
@@ -49,23 +52,23 @@ continuous_therapy = create_treatment(3000, 2000, 0, 3, 0.75)
 
 #This would be cool to do, but we need the cluster, because its 5.000.000 simulations for each fitness landscape. Would take 10 months on my computer.
 parameters = Dict(
-    "pr" => [0.01,0.02,0.03,0,04,0.05],
-    "dr" => [0,0.2,0.4,0.6,0.8],
-    "mr" => [0.001,0.005,0.01,0.05,0.1],   
-    "scenario" => [scenario_0D,scenario_1D,scenario_2D,scenario_3D], 
-    "fitness" => [fitness1,fitness2,fitness3,fitness4,fitness5],
+    "pr" => [0.02,0.025,0.03,0.035],
+    "dr" => [0.30,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7],
+    "mr" => [0.01,0.015,0.020,0.025],   
+    "scenario" => [scenario_3D], 
+    "fitness" => [fitness4],
     "treatment" => [adaptive_therapy,continuous_therapy],
-    "seed" => map(abs,rand(Int64,1))
+    "seed" => map(abs,rand(Int64,20))
 )
 
 parameters = Dict(
-    "pr" => 0.027,
-    "dr" => 0.55,
-    "mr" => 0.01,   
-    "scenario" => scenario_3D, 
-    "fitness" => fitness4,
-    "treatment" => [adaptive_therapy,continuous_therapy],
-    "seed" => map(abs,rand(Int64,1000))
+    "pr" => [0.02],
+    "dr" => [0.30],
+    "mr" => [0.01],   
+    "scenario" => [scenario_3D], 
+    "fitness" => [fitness4],
+    "treatment" => [adaptive_therapy],
+    "seed" => map(abs,rand(Int64,4))
 )
 
 parameter_combinations = dict_list(parameters)
@@ -74,6 +77,14 @@ steps=3000
 
 results = @showprogress pmap(simulate,parameter_combinations,fill(steps,length(parameter_combinations)))
 
-for (i, d) in enumerate(parameter_combinations)
-    safesave(datadir("simulations", savename(results[i], "jld2")), results[i])
+df = DataFrame(results)
+
+filepath = datadir("simulations","simulations_"*Dates.format(now(),"d.m.yyyy.H.M.S.s")*".jld2")
+
+jldopen(filepath, "w") do file
+    file["df"] = df
+end;
+
+jldopen(filepath) do file
+    file["df"]
 end
