@@ -1,11 +1,11 @@
-function simulate(d::Dict,steps::Int)
+function simulate(d::Dict,max_steps::Int)
     @unpack seed, pr, dr, mr, fitness, scenario, treatment = d
     
     fulld::Dict = copy(d)
     agent_collect::Array = [(:genotype, f) for f in genotype_fraction_function_generator(fitness)]
     model = model_init(pr=pr, dr=dr, mr=mr, scenario=scenario, fitness=fitness,treatment=treatment, seed=seed)
     #We stop (not a typo, stop != step) early if a size of max or 0 is reached
-    step = create_stop_function(steps,Int(floor(treatment.detecting_size*1.5)))
+    step = create_stop_function(max_steps,Int(floor(treatment.detecting_size*1.5)))
 
     adata::DataFrame, _ = run!(model, agent_step!, model_step!, step; adata = agent_collect)
     
