@@ -1,3 +1,5 @@
+#a = run(Cmd(`julia -q --sysimage build/TumorSim.so -p auto scripts/run_batch.jl`,detach=true))
+
 using Distributed
 
 @everywhere using DrWatson
@@ -75,11 +77,18 @@ parameter_combinations = dict_list(parameters)
 
 steps=3000
 
-results = @showprogress pmap(simulate,parameter_combinations,fill(steps,length(parameter_combinations)))
+results = []
+filename = "simulations_"*Dates.format(now(),"d.m.yyyy.H.M.S.s")
+
+open("logs/progress/"*filename*".log", "w") do io
+    p = Progress(10, barglyphs=BarGlyphs("[=> ]"),output=io,desc="",barlen=0)
+    #Hay que cambiar Progress para que solamente de el numero y el tiempo, para sacarlo facilmente del log
+    global results = progress_pmap(simulate,parameter_combinations,fill(steps,length(parameter_combinations)),progress=p)
+end
 
 df = DataFrame(results)
 
-filepath = datadir("simulations","simulations_"*Dates.format(now(),"d.m.yyyy.H.M.S.s")*".jld2")
+filepath = datadir("simulations",filename*".jld2")
 
 jldopen(filepath, "w") do file
     file["df"] = df

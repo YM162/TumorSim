@@ -20,13 +20,20 @@ function simulate(d::Dict,max_steps::Int)
     rename!(adata,genotypes)
     fulld["Genotypes"] = adata
 
-    fulld["s_dims"] = string((scenario.x,scenario.y,scenario.z))
+    if scenario.x * scenario.y * scenario.z == 0
+        fulld["s_dim"] = 0
+    else
+        fulld["s_dim"] = scenario.x!=1 + scenario.y!=1 + scenario.z!=1
+    end
+    
+    
+    fulld["s_size"] = string((scenario.x,scenario.y,scenario.z))
     fulld["s_initial_cells"] = length(scenario.cell_pos)
 
     fulld["t_detecting_size"] = treatment.detecting_size
     fulld["t_starting_size"] = treatment.starting_size
     fulld["t_pausing_size"] = treatment.pausing_size
-    fulld["t_resistance_size"] = treatment.resistance_gene
+    fulld["t_resistance_gene"] = treatment.resistance_gene
     fulld["t_kill_rate"] = treatment.kill_rate
     return fulld
 end
