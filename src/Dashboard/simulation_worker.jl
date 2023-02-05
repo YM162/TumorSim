@@ -1,4 +1,4 @@
-#julia -p auto src/Dashboard/simulation_worker.jl 0.1 0.1 0.1 0.5 0.05 0.5 0.01 0.01 0.01 1000000 3 10 3000 100 3000 0.5 0.1 0.5 0.5 0.1 0.5 0.75 0.2 0.1 0.2 2000
+#julia -p 8 src/Dashboard/simulation_worker.jl 0.027 0.001 0.027 0.5 0.05 0.5 0.01 0.01 0.01 1000000 3 10 3000 100 3000 0.65 0.1 0.65 0.5 0.1 0.5 0.75 0.2 0.1 0.2 1
 
 using Distributed
 
@@ -64,13 +64,17 @@ elseif s_dim == 3
     scenario=create_scenario((round(Int64,s_size^(1/3)),round(Int64,s_size^(1/3)),round(Int64,s_size^(1/3))),s_initial_cells)
 end
 
-fitness = [Dict([0,0,0]=>1, [1,0,0]=>1.3,[0,1,0]=>1.2,[1,1,0]=>1.5,[1,1,1]=>1.5*(1-cr)) for cr in cr_low:cr_step:cr_high]
+fitness=Dict([0,0,0]=>1, 
+            [1,0,0]=>1.3,
+            [0,1,0]=>1.2,
+            [1,1,0]=>1.5,
+            [1,1,1]=>1.5)
 
-adaptive_therapy = [create_treatment(t_detecting_size, t_detecting_size*t_starting_size, t_detecting_size*t_starting_size*t_pausing_size, 3, t_kill_rate) for t_detecting_size in t_detecting_size_low:t_detecting_size_step:t_detecting_size_high
+adaptive_therapy = [create_treatment(t_detecting_size, t_starting_size, t_pausing_size, 3, t_kill_rate) for t_detecting_size in t_detecting_size_low:t_detecting_size_step:t_detecting_size_high
                                                                             for t_starting_size in t_starting_size_low:t_starting_size_step:t_starting_size_high
                                                                             for t_pausing_size in t_pausing_size_low:t_pausing_size_step:t_pausing_size_high]
 
-continuous_therapy = [create_treatment(t_detecting_size, t_detecting_size*t_starting_size, 0, 3, t_kill_rate) for t_detecting_size in t_detecting_size_low:t_detecting_size_step:t_detecting_size_high
+continuous_therapy = [create_treatment(t_detecting_size, t_starting_size, 0.0, 3, t_kill_rate) for t_detecting_size in t_detecting_size_low:t_detecting_size_step:t_detecting_size_high
                                                                             for t_starting_size in t_starting_size_low:t_starting_size_step:t_starting_size_high]
 
 parameters = Dict(
@@ -79,36 +83,36 @@ parameters = Dict(
     "mr" => collect(mr_low:mr_step:mr_high), 
     "scenario" => scenario,
     "fitness" => fitness,
+    "cr" => collect(cr_low:cr_step:cr_high),
     "treatment" => append!(adaptive_therapy,continuous_therapy),
     "seed" => map(abs,rand(Int64,repetitions))
 )
 
 parameter_combinations = dict_list(parameters)
 
-steps=10
-println("starting things")
+steps=3000
+println("Starting simulations...")
 
 filename = "simulations_"*Dates.format(now(),"d.m.yyyy.H.M.S.s")
 
-println(length(parameter_combinations))
+println("Number of simulations: ",length(parameter_combinations))
 
 open(projectdir("logs","progress",filename*".log"), "w") do io
-    p = Progress(10, barglyphs=BarGlyphs("[=> ]"),output=io,desc="",barlen=0)
+    p = Progress(length(parameter_combinations), barglyphs=BarGlyphs("[=> ]"),output=io,desc="",barlen=0)
     results = progress_pmap(simulate,parameter_combinations,fill(steps,length(parameter_combinations)),progress=p)
-    #Meter aquí un mensaje al log para señalizar que está postprocesando.
-    println("here")
+
+    println("Saving simulations...")
 
     df = DataFrame(results)
 
     filepath = datadir("simulations",filename*".jld2")
 
-    println("maybe here")
 
     jldopen(filepath, "w") do file
         file["df"] = df
     end
-
+    
+    println(df[!,"TTP"])
     #Meter un mensaje al log para señalizar que ya está terminado.
-    println("???")
 end
 
