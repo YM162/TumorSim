@@ -8,7 +8,7 @@ using Distributed
 @everywhere using TumorSim
 
 using ProgressMeter
-using JLD2
+using BSON
 using DataFrames
 using Dates
 #With the same fitness we can change the cost of resistance
@@ -53,12 +53,23 @@ adaptive_therapy = create_treatment(3000, 0.65, 0.5, 3, 0.75)
 continuous_therapy = create_treatment(3000, 0.65, 0.0, 3, 0.75) 
 
 parameters = Dict(
-    "pr" => [0.01,0.015,0.02,0.025,0.03,0.04,0.1],
-    "dr" => [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7],
-    "mr" => [0.01,0.1,0.2],  
+    "pr" => [0.015,0.02,0.025,0.03,0.04],
+    "dr" => [0.2,0.3,0.4,0.5,0.6,0.7],
+    "mr" => [0.01,0.05,0.2],  
     "scenario" => [scenario_3D], 
     "fitness" => [fitness4],
-    "cr" => [0.0,0.1,0.3,0.5,0.7],
+    "cr" => [0.0,0.1,0.3,0.4,0.5,0.7],
+    "treatment" => [adaptive_therapy,continuous_therapy],
+    "seed" => map(abs,rand(Int64,10))
+)
+
+parameters = Dict(
+    "pr" => [0.015,0.02],
+    "dr" => [0.4,0.5],
+    "mr" => [0.01],  
+    "scenario" => [scenario_3D], 
+    "fitness" => [fitness4],
+    "cr" => [0.0,0.5],
     "treatment" => [adaptive_therapy,continuous_therapy],
     "seed" => map(abs,rand(Int64,10))
 )
@@ -69,20 +80,18 @@ steps=3000
 
 filename = "simulations_"*Dates.format(now(),"d.m.yyyy.H.M.S.s")
 println("Starting simulations...")
-open("logs/progress/"*filename*".log", "w") do io
-    p = Progress(length(parameter_combinations), barglyphs=BarGlyphs("[=> ]"),output=stdout,barlen=50)
-    #Hay que cambiar Progress para que solamente de el numero y el tiempo, para sacarlo facilmente del log
-    results = progress_pmap(simulate,parameter_combinations,fill(steps,length(parameter_combinations)),progress=p)
 
-    println("Saving simulations...")
-    df = DataFrame(results)
-    filepath = datadir("simulations",filename*".jld2")
+p = Progress(length(parameter_combinations), barglyphs=BarGlyphs("[=> ]"),output=stdout,barlen=50)
+results = progress_pmap(simulate,parameter_combinations,fill(steps,length(parameter_combinations)),progress=p)
 
-    jldopen(filepath, "w") do file
-        file["df"] = df
-    end;
-    println(df[!,"TTP"])
-end
+println("Saving simulations...")
+df = DataFrame(results)
+filepath = datadir("simulations",filename*".bson")
+
+bson(filepath,Dict("df" => df))
+
+println(df[!,"TTP"])
+
 
 
 

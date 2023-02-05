@@ -8,7 +8,7 @@ using Distributed
 @everywhere using TumorSim
 
 using ProgressMeter
-using JLD2
+using BSON
 using DataFrames
 using Dates
 
@@ -105,12 +105,10 @@ open(projectdir("logs","progress",filename*".log"), "w") do io
 
     df = DataFrame(results)
 
-    filepath = datadir("simulations",filename*".jld2")
+    filepath = datadir("simulations",filename*".bson")
 
 
-    jldopen(filepath, "w") do file
-        file["df"] = df
-    end
+    bson(filepath,Dict("df" => df))
     
     println(df[!,"TTP"])
     #Meter un mensaje al log para señalizar que ya está terminado.

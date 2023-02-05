@@ -1,13 +1,13 @@
-#Built with a lot of references from https://github.com/GenieFramework/StippleDemos
 
 using Stipple, StipplePlotly, StippleUI, Genie, GenieFramework
 using DataFrames
 using Statistics
-using JLD2
+using BSON
 
 @reactive mutable struct ViewResultsPage <: ReactiveModel
 
     button::R{Int} = 0
+    clear_button::R{Int} = 0
 
     loading::R{Bool} = false
     disabled::R{Bool} = false
@@ -17,9 +17,9 @@ using JLD2
     simulations::R{DataFrame} = DataFrame()
 
     scenario_list::R{Vector{Int64}} = [0, 1, 2, 3]
-    scenario::R{Int64} = 3
+    scenario::R{Vector{Int64}} = [3]
 
-    x_variable_list::R{Vector{Symbol}} = [:pr, :dr, :mr, :cr]
+    x_variable_list::R{Vector{Symbol}} = [:pr, :dr, :mr, :cr, :t_kill_rate, :t_detecting_size, :t_starting_size, :t_pausing_size, :s_dim]
     x_variable::R{Symbol} = :dr
 
     simulation_results_list::R{Vector{String}} = readdir(datadir("simulations"))
@@ -45,7 +45,9 @@ using JLD2
     plot_data::R{Vector{PlotData}} = []
     layout::R{PlotLayout} = PlotLayout(
                                     plot_bgcolor = "#FFFFFF",
-                                    title = PlotLayoutTitle(text="TTP", font=Font(24))
+                                    title = PlotLayoutTitle(text="Simulation results", font=Font(24)),
+                                    xaxis = [PlotLayoutAxis(xy="x",title_text="dr")],
+                                    yaxis = [PlotLayoutAxis(xy="y",title_text="TTP")],
                                     )
 
     config::R{PlotConfig} = PlotConfig()
@@ -71,9 +73,9 @@ function tumorPlot(model::ViewResultsPage,name)
     filter!((row) -> (row["t_starting_size"] >= (model.starting_size[].range.start/1000)) & (row["t_starting_size"] <= (model.starting_size[].range.stop/1000)), data)
     filter!((row) -> (row["t_detecting_size"] >= (model.detecting_size[].range.start)) & (row["t_detecting_size"] <= (model.detecting_size[].range.stop)), data)
     filter!((row) -> (row["t_pausing_size"] >= (model.pausing_size[].range.start/1000)) & (row["t_pausing_size"] <= (model.pausing_size[].range.stop/1000)), data)
-    filter!((row) -> (row["s_dim"] == model.scenario[]), data)
+    filter!((row) -> (row["s_dim"] in model.scenario[]), data)
 
-    model.visible_simulations[] = length(data[!,"TTP"])
+    model.visible_simulations[] = length(data[!,"TTP"]) * 2
 
     #We continue with the plot
     x = sort(unique(data[!, string(model.x_variable[])]))
@@ -92,6 +94,13 @@ function tumorPlot(model::ViewResultsPage,name)
             append!(y,length(y_[!,"TTP"])/length(x_filter[!,"TTP"]))
         end
     end
+
+    model.layout[] = PlotLayout(
+                                plot_bgcolor = "#FFFFFF",
+                                title = PlotLayoutTitle(text="Simulation results", font=Font(24)),
+                                xaxis = [PlotLayoutAxis(xy="x",title_text=string(model.x_variable[]))],
+                                yaxis = [PlotLayoutAxis(xy="y",title_text=string(model.y_variable[]))],
+                                )
 
     PlotData(
         x=x,
@@ -114,19 +123,28 @@ function ui(model::ViewResultsPage)
 
         model.loading[] = true
         filepath = datadir("simulations", model.simulation_results[])
+ 
+        append!(model.simulations[],BSON.load(filepath)["df"])
 
-        jldopen(filepath) do file
-            append!(model.simulations[],file["df"])
-        end
-
-    
+        unique!(model.simulations[])
+        
         model.plot_data[] = [tumorPlot(model,"Continuous therapy"),tumorPlot(model,"Adaptive therapy")]
         model.loading[] = false
-        model.disabled[] = true
     end
+
+    onany(model.clear_button) do (_...)
+        model.simulations[] = DataFrame()
+        model.visible_simulations[] = 0
+        model.plot_data[] = []
+    end
+
 
     onany(model.x_variable, model.y_variable, model.pr, model.dr, model.mr, model.cr, model.detecting_size, model.starting_size, model.pausing_size, model.kill_rate,model.scenario) do (_...)
         model.plot_data[] = [tumorPlot(model,"Continuous therapy"),tumorPlot(model,"Adaptive therapy")]
+    end
+
+    onany(model.simulations) do (_...)
+        unique!(model.simulations[])
     end
 
     page(model, class="container", title="TumorSim Simulation Dashboard",
@@ -152,7 +170,7 @@ function ui(model::ViewResultsPage)
             """
         ),
         [
-            heading("TumorSimu Simulation Dashboard")
+            heading("TumorSim Simulation Dashboard")
             row([
                 cell(
                 class="st-module",
@@ -162,7 +180,7 @@ function ui(model::ViewResultsPage)
                 ])
             ])
             row([
-                btn("Load simulation results", loading=@data(:loading),disabled=@data(:disabled),color="primary", textcolor="black", @click("button += 1"), [
+                btn("Load data", loading=@data(:loading),disabled=@data(:disabled),color="primary", textcolor="black", @click("button += 1"), [
                     tooltip(contentclass="bg-indigo", contentstyle="font-size: 16px",
                         style="offset: 10px 10px", "Load all simulations")])
                 cell(
@@ -170,6 +188,9 @@ function ui(model::ViewResultsPage)
                     [
                         Stipple.select(:simulation_results; options=:simulation_results_list)
                     ])
+                btn("Clear ALL data",color="primary", textcolor="black", @click("clear_button += 1"), [
+                    tooltip(contentclass="bg-indigo", contentstyle="font-size: 16px",
+                        style="offset: 10px 10px", "Load all simulations")])
             ])
             
             row([
@@ -207,7 +228,7 @@ function ui(model::ViewResultsPage)
                             [
                                 h5(["Filters: (Currently showing ",
                                 GenieFramework.span(model.visible_simulations, @text(:visible_simulations)),
-                                " simulations.)"])
+                                " unique simulations.)"])
                                 br()
                                 h6("Proliferation rate (x1000)")
                                 Stipple.range(0:10:200,
@@ -282,7 +303,7 @@ function ui(model::ViewResultsPage)
                             class="st-module",
                             [
                                 h6("Scenario Dimensionality")
-                                Stipple.select(:scenario; options=:scenario_list) #Se podría poner multiple=true
+                                Stipple.select(:scenario; options=:scenario_list, multiple=true) 
                             ]
                         )
                     ]
