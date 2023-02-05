@@ -1,8 +1,8 @@
 #We define what a treatment is
 mutable struct Treatment
     detecting_size::Int64
-    starting_size::Int64
-    pausing_size::Int64
+    starting_size::Float64
+    pausing_size::Float64
     resistance_gene::Int64
     kill_rate::Float64
     active::Bool

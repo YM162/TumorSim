@@ -8,7 +8,7 @@
 end
 
 #We initialize the model according to some parameters.
-function  model_init(;seed::Int64,pr::Float64,dr::Float64,mr::Float64,fitness::Dict{Vector{Int64},Real},scenario::Scenario,treatment::Treatment)
+function  model_init(;seed::Int64,pr::Float64,dr::Float64,mr::Float64,fitness::Dict{Vector{Int64},Real},cr::Float64,scenario::Scenario,treatment::Treatment)
     #We need to do this to reuse the treatment in paramscan
     treatment = Treatment(treatment.detecting_size,
                             treatment.starting_size,
@@ -27,6 +27,14 @@ function  model_init(;seed::Int64,pr::Float64,dr::Float64,mr::Float64,fitness::D
 
     ngenes::Int=length(collect(keys(fitness))[1])
     
+
+    #Apply cr to fitness
+    for i in keys(fitness)
+        if i[treatment.resistance_gene]==1
+            fitness[i]=fitness[i]*(1-cr)
+        end
+    end
+
     fitness = Dict(zip([BitArray(i) for i in keys(fitness)],[fitness[i] for i in keys(fitness)]))
     fitness=DefaultDict(0,fitness)
 
@@ -113,10 +121,10 @@ function model_step!(model)
     current_size::Int = nagents(model)
     model.current_size = current_size
     if model.treatment.detected
-        if current_size < model.treatment.pausing_size
+        if current_size < (model.treatment.starting_size * model.treatment.detecting_size * model.treatment.pausing_size)
             model.treatment.active = false
         end
-        if current_size > model.treatment.starting_size
+        if current_size > (model.treatment.starting_size * model.treatment.detecting_size)
             model.treatment.active = true
         end
     else

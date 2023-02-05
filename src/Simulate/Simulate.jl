@@ -1,9 +1,9 @@
 function simulate(d::Dict,max_steps::Int)
-    @unpack seed, pr, dr, mr, fitness, scenario, treatment = d
+    @unpack seed, pr, dr, mr, fitness, cr, scenario, treatment = d
     
     fulld::Dict = copy(d)
     agent_collect::Array = [(:genotype, f) for f in genotype_fraction_function_generator(fitness)]
-    model = model_init(pr=pr, dr=dr, mr=mr, scenario=scenario, fitness=fitness,treatment=treatment, seed=seed)
+    model = model_init(pr=pr, dr=dr, mr=mr, scenario=scenario, fitness=fitness,treatment=treatment,cr = cr, seed=seed)
     #We stop (not a typo, stop != step) early if a size of max or 0 is reached
     step = create_stop_function(max_steps,Int(floor(treatment.detecting_size*1.5)))
 
@@ -23,7 +23,7 @@ function simulate(d::Dict,max_steps::Int)
     if scenario.x * scenario.y * scenario.z == 0
         fulld["s_dim"] = 0
     else
-        fulld["s_dim"] = scenario.x!=1 + scenario.y!=1 + scenario.z!=1
+        fulld["s_dim"] = Int(scenario.x!=1) + Int(scenario.y!=1) + Int(scenario.z!=1)
     end
     
     
@@ -35,5 +35,6 @@ function simulate(d::Dict,max_steps::Int)
     fulld["t_pausing_size"] = treatment.pausing_size
     fulld["t_resistance_gene"] = treatment.resistance_gene
     fulld["t_kill_rate"] = treatment.kill_rate
+
     return fulld
 end
