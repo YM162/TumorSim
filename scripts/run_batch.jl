@@ -71,7 +71,7 @@ parameters = Dict(
     "fitness" => [fitness4],
     "cr" => [0.0,0.5],
     "treatment" => [adaptive_therapy,continuous_therapy],
-    "seed" => map(abs,rand(Int64,10))
+    "seed" => map(abs,rand(Int64,1))
 )
 
 parameter_combinations = dict_list(parameters)

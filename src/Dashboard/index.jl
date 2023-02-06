@@ -3,7 +3,7 @@
 using Stipple, StipplePlotly, StippleUI, Genie, GenieFramework
 
 include(srcdir("Dashboard", "view.jl"))
-#include(srcdir("Dashboard", "launch.jl"))
+include(srcdir("Dashboard", "launch.jl"))
 
 route("/") do
     Genie.Renderer.redirect("/view")
