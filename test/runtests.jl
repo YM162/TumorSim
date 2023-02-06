@@ -1,6 +1,8 @@
 using DrWatson, Test
 @quickactivate "TumorSim"
 
+using TumorSim
+
 using Distributed
 using Agents, Random
 using Agents.DataFrames, Agents.Graphs
@@ -15,26 +17,18 @@ using DataFrames
 println("Starting tests")
 ti = time()
 
-#We include everything we need
-include(srcdir("Fitness/Fitness.jl"))
-include(srcdir("Scenario/Scenario.jl"))
-include(srcdir("Treatment/Treatment.jl"))
-include(srcdir("TumorModel/TumorModel.jl"))
-include(srcdir("Simulate/Simulate.jl"))
-include(srcdir("Analysis/Analysis.jl"))
-
 @testset "Fitness tests" begin
     #genotype_fraction_function_generator tests
     fitness=Dict([0,0,0]=>1, [1,0,0]=>1.3)
-    functions = genotype_fraction_function_generator(fitness)
+    functions = TumorSim.genotype_fraction_function_generator(fitness)
     @test length(functions) == 2
     @test functions[1]([BitArray([0,0,0]),BitArray([1,0,0]),BitArray([0,0,0])]) == 2
     @test functions[2]([BitArray([0,0,0]),BitArray([1,0,0]),BitArray([0,0,0])]) == 1
 
     #bit_2_int tests
-    @test bit_2_int(BitArray([1,0,0,0,0])) == 16
-    @test bit_2_int(BitArray([0,0,0,0,0])) == 0
-    @test bit_2_int(BitArray([1,1,1])) == 7
+    @test TumorSim.bit_2_int(BitArray([1,0,0,0,0])) == 16
+    @test TumorSim.bit_2_int(BitArray([0,0,0,0,0])) == 0
+    @test TumorSim.bit_2_int(BitArray([1,1,1])) == 7
 end
 
 @testset "Scenario tests" begin
@@ -99,25 +93,25 @@ end
     treatment = create_treatment(3000,2000,1000,3,0.75)
     scenario = create_scenario(10,5)
     fitness=Dict([0,0,0]=>1, [1,0,0]=>1.3)
-    model = model_init(pr=0.027, dr=0.55, mr=0.01, scenario=scenario, fitness=fitness,treatment=treatment, seed=0)
+    model = TumorSim.model_init(pr=0.027, dr=0.55, mr=0.01, scenario=scenario, fitness=fitness,treatment=treatment, cr = 0.2, seed=0)
     agent = collect(allagents(model))[1]
     @test nagents(model) == 5
     @test agent.time_alive == 0
     @test agent.genotype == BitArray([0,0,0])
     @test agent.phylogeny == []
-    @test get_near!(agent,model) ≈ 1.220971404849699
+    @test TumorSim.TumorModel.get_near!(agent,model) ≈ 1.220971404849699
     #3D
     scenario = create_scenario((10,10,10),5,"center",[(1,1,1)])
-    model = model_init(pr=0.027, dr=0.55, mr=0.01, scenario=scenario, fitness=fitness,treatment=treatment, seed=0)
+    model = TumorSim.model_init(pr=0.027, dr=0.55, mr=0.01, scenario=scenario, fitness=fitness,treatment=treatment, cr = 0.2, seed=0)
     agent = collect(allagents(model))[1]
     @test nagents(model) == 5
     @test agent.time_alive == 0
     @test agent.genotype == BitArray([0,0,0])
     @test agent.phylogeny == []
-    @test get_near!(agent,model) == 5
+    @test TumorSim.TumorModel.get_near!(agent,model) == 5
 end
 #Prepare a simulation
-treatment = create_treatment(3000,2000,1000,3,0.75)
+treatment = create_treatment(3000,0.65,0.5,3,0.75)
 scenario = create_scenario((100,100,100),5,"center",[(1,1,1)])
 fitness=Dict([0,0,0]=>1, 
             [1,0,0]=>1.3,
@@ -132,6 +126,7 @@ params = Dict(
     "scenario" => scenario, 
     "fitness" => fitness,
     "treatment" => treatment,
+    "cr" => 0.2,
     "seed" => 0
 )
 
@@ -143,7 +138,7 @@ adata2 = results[2]["Genotypes"]
 
 @testset "Simulate tests" begin
     @test length(results) == 2
-    @test length(results[1]) == 18
+    @test length(results[1]) == 20
     @test length(eachcol(adata1)) == 6
     @test length(eachrow(adata1)) != 0
     @test length(eachrow(adata1)) > length(eachrow(adata2))
@@ -168,8 +163,7 @@ end
     @test diversity[!,"evenness"][500] < 1
 
 end
-
-using TumorSim
+#Faltan los tests del dashboard y el worker
 
 ti = time() - ti
 println("\nTest took total time of:")

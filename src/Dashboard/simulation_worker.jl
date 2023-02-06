@@ -119,6 +119,8 @@ open(projectdir("logs","progress",filename), "w") do io
     
     println(df[!,"TTP"])
 end
+
 sleep(10)
+
 rm(projectdir("logs","progress",filename))
 
