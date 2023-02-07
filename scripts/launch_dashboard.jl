@@ -1,7 +1,6 @@
-using Distributed
+#julia -i scripts/launch_dashboard.jl
 using DrWatson
 @quickactivate "TumorSim"
-
 using TumorSim
-
-include(srcdir("Dashboard/index.jl"))
+using DataFrames
+launch_dashboard()

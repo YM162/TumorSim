@@ -1,8 +1,5 @@
 
-using Stipple, StipplePlotly, StippleUI, Genie, GenieFramework
-using DataFrames
-using Statistics
-using BSON
+
 
 @reactive mutable struct ViewResultsPage <: ReactiveModel
 
@@ -116,6 +113,7 @@ end
 function ui(model::ViewResultsPage)
 
     onany(model.button) do (_...)
+    try
         #Load data
         if model.simulation_results[] == "Select a file to load"
             return
@@ -130,6 +128,9 @@ function ui(model::ViewResultsPage)
         
         model.plot_data[] = [tumorPlot(model,"Continuous therapy"),tumorPlot(model,"Adaptive therapy")]
         model.loading[] = false
+    catch e
+        @error "ERROR: " exception=(e, catch_backtrace())
+    end
     end
 
     onany(model.clear_button) do (_...)

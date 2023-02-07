@@ -13,6 +13,8 @@ using ColorSchemes
 using DataStructures
 using DataFrames
 
+using Genie
+
 # Run test suite
 println("Starting tests")
 ti = time()
@@ -164,6 +166,24 @@ end
 
 end
 #Faltan los tests del dashboard y el worker
+
+@testset "Dashboard tests" begin
+    @test launch_dashboard().webserver._isexception == false
+    #Maybe we can test the buttons somehow?
+    sleep(5)
+    @test kill_dashboard() == Genie.Server.ServersCollection[]
+end
+
+@testset "Worker tests" begin
+    rm(projectdir("logs","progress","test"),force=true)
+    rm(projectdir("data","simulations","test.bson"),force=true)
+    worker_path = srcdir("Dashboard","simulation_worker.jl")
+    worker = `julia --check-bounds=yes $worker_path 0.027 0.001 0.027 0.5 0.05 0.5 0.01 0.01 0.01 1000000 3 10 3000 100 3000 0.65 0.1 0.65 0.5 0.1 0.5 0.75 0.05 0.75 0.2 0.1 0.2 1 test`
+    run(worker)
+
+    @test isfile(projectdir("logs","progress","test")) == true
+    @test isfile(projectdir("data","simulations","test.bson")) == true
+end
 
 ti = time() - ti
 println("\nTest took total time of:")

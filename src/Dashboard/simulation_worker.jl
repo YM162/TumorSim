@@ -1,4 +1,4 @@
-#julia -p 8 src/Dashboard/simulation_worker.jl 0.027 0.001 0.027 0.5 0.05 0.5 0.01 0.01 0.01 1000000 3 10 3000 100 3000 0.65 0.1 0.65 0.5 0.1 0.5 0.75 0.05 0.75 0.2 0.1 0.2 1
+#julia -p 4 --check-bounds=yes src/Dashboard/simulation_worker.jl 0.027 0.001 0.027 0.5 0.05 0.5 0.01 0.01 0.01 1000000 3 10 3000 100 3000 0.65 0.1 0.65 0.5 0.1 0.5 0.75 0.05 0.75 0.2 0.1 0.2 1
 
 using Distributed
 
@@ -122,5 +122,5 @@ end
 
 sleep(10)
 
-rm(projectdir("logs","progress",filename))
+#rm(projectdir("logs","progress",filename))
 
