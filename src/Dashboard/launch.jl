@@ -51,7 +51,7 @@ function launch_simulations_ui(model::LaunchSimulationsPage)
         worker_path = srcdir("Dashboard","simulation_worker.jl")
         threads = TumorSim.Config["Worker"]["threads"]
 
-        worker = `julia -p $threads --check-bounds=yes $worker_path 
+        worker = `julia -p $threads --check-bounds=yes --project=$(projectdir()) $worker_path 
                         $(model.pr[].range.start/1000) 0.005 $(model.pr[].range.stop/1000) 
                         $(model.dr[].range.start/1000) 0.05 $(model.dr[].range.stop/1000) 
                         $(model.mr[].range.start/1000) 0.005 $(model.mr[].range.stop/1000) 
