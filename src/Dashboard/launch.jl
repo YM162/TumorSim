@@ -1,8 +1,4 @@
 
-using Stipple, StipplePlotly, StippleUI, Genie, GenieFramework
-using DataFrames
-using Statistics
-using BSON
 
 
 @reactive mutable struct LaunchSimulationsPage <: ReactiveModel
@@ -53,8 +49,9 @@ function launch_simulations_ui(model::LaunchSimulationsPage)
         #Launch simulation
         println("Launching simulation")
         worker_path = srcdir("Dashboard","simulation_worker.jl")
+        threads = TumorSim.Config["Worker"]["threads"]
 
-        worker = `julia -p 8 --check-bounds=yes $worker_path 
+        worker = `julia -p $threads --check-bounds=yes $worker_path 
                         $(model.pr[].range.start/1000) 0.005 $(model.pr[].range.stop/1000) 
                         $(model.dr[].range.start/1000) 0.05 $(model.dr[].range.stop/1000) 
                         $(model.mr[].range.start/1000) 0.005 $(model.mr[].range.stop/1000) 
@@ -69,8 +66,8 @@ function launch_simulations_ui(model::LaunchSimulationsPage)
                         $(model.repetitions[])
                         $(model.name[])`
         println(worker)
+        #run(worker, wait=false)
         @async run(worker)
-        
     end
 
     onany(model.cancel_button) do (_...)

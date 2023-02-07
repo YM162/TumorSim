@@ -16,6 +16,11 @@ using ColorSchemes
 using DataStructures
 using DataFrames
 
+using TOML
+function __init__()
+    global Config = TOML.parse(open(projectdir("Config.toml")))
+    nothing
+end
 
 #We include every file in the module.
 include("Fitness/Fitness.jl")

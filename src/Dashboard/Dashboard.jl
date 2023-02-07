@@ -15,10 +15,8 @@ module Dashboard
     using TumorSim.Simulate
     using TumorSim.Treatment
     using TumorSim.TumorModel
-
+    using TumorSim
     function launch_dashboard()
-        # we can pass here args like ip, port or envirnment.
-        # The struct with all the settings is Genie.Configuration.Settings
 
         include(srcdir("Dashboard", "view.jl"))
         include(srcdir("Dashboard", "launch.jl"))
@@ -27,7 +25,7 @@ module Dashboard
             Genie.Renderer.redirect("/view")
         end
 
-        up()
+        up(TumorSim.Config["Dashboard"]["port"],TumorSim.Config["Dashboard"]["ip"])
     end
 
     function kill_dashboard()
