@@ -12,11 +12,11 @@ module Simulate
     using TumorSim.Analysis
 
     function simulate(d::Dict,max_steps::Int)
-        @unpack seed, pr, dr, mr, fitness, cr, scenario, treatment = d
+        @unpack seed, dr, mr, fitness, cr, scenario, treatment = d
         
         fulld::Dict = copy(d)
         agent_collect::Array = [(:genotype, f) for f in genotype_fraction_function_generator(fitness)]
-        model = model_init(pr=pr, dr=dr, mr=mr, scenario=scenario, fitness=fitness,treatment=treatment,cr = cr, seed=seed)
+        model = model_init(dr=dr, mr=mr, scenario=scenario, fitness=fitness,treatment=treatment,cr = cr, seed=seed)
         #We stop (not a typo, stop != step) early if a size of max or 0 is reached
         step = create_stop_function(max_steps,Int(floor(treatment.detecting_size*1.5)))
 

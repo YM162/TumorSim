@@ -16,20 +16,15 @@
     scenario_list::R{Vector{Int64}} = [0, 1, 2, 3]
     scenario::R{Vector{Int64}} = [3]
 
-    x_variable_list::R{Vector{Symbol}} = [:pr, :dr, :mr, :cr, :t_kill_rate, :t_detecting_size, :t_starting_size, :t_pausing_size, :s_dim]
-    x_variable::R{Symbol} = :dr
-
     simulation_results_list::R{Vector{String}} = readdir(datadir("simulations"))
     simulation_results::R{String} = "Select a file to load"
 
-    y_variable_list::R{Vector{Symbol}} = [:TTP, :recovery_rate]
-    y_variable::R{Symbol} = :TTP
+    
                                           
     detecting_size::R{RangeData{Int64}} = RangeData(0:5000)
     starting_size::R{RangeData{Int64}} = RangeData(0:1000)
     pausing_size::R{RangeData{Int64}} = RangeData(0:1000)
 
-    pr::R{RangeData{Int64}} = RangeData(0:200)
     dr::R{RangeData{Int64}} = RangeData(0:1000)
     mr::R{RangeData{Int64}} = RangeData(0:200)
 
@@ -39,6 +34,10 @@
 
     repetitions::R{Int64} = 10
 
+    x_variable_list::R{Vector{Symbol}} = [ :dr, :mr, :cr, :t_kill_rate, :t_detecting_size, :t_starting_size, :t_pausing_size, :s_dim]
+    x_variable::R{Symbol} = :dr
+    y_variable_list::R{Vector{Symbol}} = [:TTP, :recovery_rate]
+    y_variable::R{Symbol} = :TTP
     plot_data::R{Vector{PlotData}} = []
     layout::R{PlotLayout} = PlotLayout(
                                     plot_bgcolor = "#FFFFFF",
@@ -46,11 +45,20 @@
                                     xaxis = [PlotLayoutAxis(xy="x",title_text="dr")],
                                     yaxis = [PlotLayoutAxis(xy="y",title_text="TTP")],
                                     )
+   #Hay que cambiar todo lo de la 2 para que sea X en función del tiempo.
+    y_variable_list2::R{Vector{Symbol}} = [:shannon_index, :evenness, :tumor_size, :resistant_percentage]
+    y_variable2::R{Symbol} = :tumor_size
+    plot_data2::R{Vector{PlotData}} = []
+    layout2::R{PlotLayout} = PlotLayout(
+                                    plot_bgcolor = "#FFFFFF",
+                                    title = PlotLayoutTitle(text="Simulation results", font=Font(24)),
+                                    xaxis = [PlotLayoutAxis(xy="x",title_text="time (Arbitrary units)")],
+                                    yaxis = [PlotLayoutAxis(xy="y",title_text="tumor_size")],
+                                    )
 
     config::R{PlotConfig} = PlotConfig()
 
 end
-
 
 function tumorPlot(model::ViewResultsPage,name) 
     if name == "Continuous therapy"
@@ -61,8 +69,6 @@ function tumorPlot(model::ViewResultsPage,name)
     end
 
     #We apply all Filters
-
-    filter!((row) -> (row["pr"] >= (model.pr[].range.start/1000)) & (row["pr"] <= (model.pr[].range.stop/1000)), data)
     filter!((row) -> (row["dr"] >= (model.dr[].range.start/1000)) & (row["dr"] <= (model.dr[].range.stop/1000)), data)
     filter!((row) -> (row["mr"] >= (model.mr[].range.start/1000)) & (row["mr"] <= (model.mr[].range.stop/1000)), data)
     filter!((row) -> (row["cr"] >= (model.cr[].range.start/1000)) & (row["cr"] <= (model.cr[].range.stop/1000)), data)
@@ -99,14 +105,70 @@ function tumorPlot(model::ViewResultsPage,name)
                                 yaxis = [PlotLayoutAxis(xy="y",title_text=string(model.y_variable[]))],
                                 )
 
-    PlotData(
+    y_upper = 500
+    y_lower = 100
+    return [PlotData(
+        x=x,
+        y = y,
+        plot=StipplePlotly.Charts.PLOT_TYPE_SCATTER,
+        name=name,
+    )]
+end
+
+
+function tumorPlot2(model::ViewResultsPage,name) 
+    if name == "Continuous therapy"
+        data = filter((row) -> row["t_pausing_size"] == 0.0,model.simulations[])
+
+    elseif name == "Adaptive therapy"
+        data = filter((row) -> row["t_pausing_size"] != 0,model.simulations[]) #Hay que añadir la t_pausing_size a las variables para cambiarlo dependiendo del detecting size
+    end
+
+    #We apply all Filters
+    filter!((row) -> (row["dr"] >= (model.dr[].range.start/1000)) & (row["dr"] <= (model.dr[].range.stop/1000)), data)
+    filter!((row) -> (row["mr"] >= (model.mr[].range.start/1000)) & (row["mr"] <= (model.mr[].range.stop/1000)), data)
+    filter!((row) -> (row["cr"] >= (model.cr[].range.start/1000)) & (row["cr"] <= (model.cr[].range.stop/1000)), data)
+    filter!((row) -> (row["t_kill_rate"] >= (model.kill_rate[].range.start/1000)) & (row["t_kill_rate"] <= (model.kill_rate[].range.stop/1000)), data)
+    filter!((row) -> (row["t_starting_size"] >= (model.starting_size[].range.start/1000)) & (row["t_starting_size"] <= (model.starting_size[].range.stop/1000)), data)
+    filter!((row) -> (row["t_detecting_size"] >= (model.detecting_size[].range.start)) & (row["t_detecting_size"] <= (model.detecting_size[].range.stop)), data)
+    filter!((row) -> (row["t_pausing_size"] >= (model.pausing_size[].range.start/1000)) & (row["t_pausing_size"] <= (model.pausing_size[].range.stop/1000)), data)
+    filter!((row) -> (row["s_dim"] in model.scenario[]), data)
+
+    #We continue with the plot
+    x = collect(1:3500)
+    y=[]
+    if model.y_variable2[] == :tumor_size
+        sizes = [[] for i in 1:3500]
+        for sim in data[!,"Genotypes"]
+            for (i,row) in enumerate(eachrow(sim))
+                append!(sizes[i],sum(row[2:end]))
+            end
+        end
+
+        for i in 1:3500
+            if sizes[i] == []
+                append!(y,0)
+            else
+                append!(y,mean(sizes[i]))
+            end
+        end
+
+    end
+    #Cambiar la estructura de la funcion para modificar model.plot_data directamente, y así poder plotear las barras de error.
+    model.layout2[] = PlotLayout(
+                            plot_bgcolor = "#FFFFFF",
+                            title = PlotLayoutTitle(text="Simulation results", font=Font(24)),
+                            xaxis = [PlotLayoutAxis(xy="x",title_text="time (Arbitrary units)")],
+                            yaxis = [PlotLayoutAxis(xy="y",title_text=string(model.y_variable2[]))],
+                            )
+
+    return PlotData(
         x=x,
         y = y,
         plot=StipplePlotly.Charts.PLOT_TYPE_SCATTER,
         name=name,
     )
 end
-
 
 
 
@@ -126,7 +188,8 @@ function ui(model::ViewResultsPage)
 
         unique!(model.simulations[])
         
-        model.plot_data[] = [tumorPlot(model,"Continuous therapy"),tumorPlot(model,"Adaptive therapy")]
+        model.plot_data[] = [tumorPlot(model,"Continuous therapy");tumorPlot(model,"Adaptive therapy")]
+        model.plot_data2[] = [tumorPlot2(model,"Continuous therapy");tumorPlot2(model,"Adaptive therapy")]
         model.loading[] = false
     catch e
         @error "ERROR: " exception=(e, catch_backtrace())
@@ -140,8 +203,9 @@ function ui(model::ViewResultsPage)
     end
 
 
-    onany(model.x_variable, model.y_variable, model.pr, model.dr, model.mr, model.cr, model.detecting_size, model.starting_size, model.pausing_size, model.kill_rate,model.scenario) do (_...)
-        model.plot_data[] = [tumorPlot(model,"Continuous therapy"),tumorPlot(model,"Adaptive therapy")]
+    onany(model.y_variable2, model.x_variable, model.y_variable, model.dr, model.mr, model.cr, model.detecting_size, model.starting_size, model.pausing_size, model.kill_rate,model.scenario) do (_...)
+        model.plot_data[] = [tumorPlot(model,"Continuous therapy");tumorPlot(model,"Adaptive therapy")]
+        model.plot_data2[] = [tumorPlot2(model,"Continuous therapy");tumorPlot2(model,"Adaptive therapy")]
     end
 
     onany(model.simulations) do (_...)
@@ -195,6 +259,7 @@ function ui(model::ViewResultsPage)
             ])
             
             row([
+                
                 cell(
                     size=6,
                     class="st-module",
@@ -219,6 +284,22 @@ function ui(model::ViewResultsPage)
                         
                         plot(:plot_data, layout=:layout, config=:config)
                         
+                        #Other plot
+                        row([
+                            cell(
+                                class="st-module",
+                                [
+                                    Stipple.select(:y_variable2; options=:y_variable_list2)
+                                ])
+                            cell(
+                                class="st-module",
+                                [
+                                    h5("by timestep")
+                                ])
+                        ])
+                        
+                        plot(:plot_data2, layout=:layout2, config=:config)
+                        
                         ]
                 )
                 cell(
@@ -231,10 +312,6 @@ function ui(model::ViewResultsPage)
                                 GenieFramework.span(model.visible_simulations, @text(:visible_simulations)),
                                 " unique simulations.)"])
                                 br()
-                                h6("Proliferation rate (x1000)")
-                                Stipple.range(0:10:200,
-                                    @data(:pr);
-                                    label=true)
                             ]
                         )
                         cell(

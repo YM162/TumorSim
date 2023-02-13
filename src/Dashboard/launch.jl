@@ -20,7 +20,6 @@
     starting_size::R{RangeData{Int64}} = RangeData(800:800)
     pausing_size::R{RangeData{Int64}} = RangeData(500:500)
 
-    pr::R{RangeData{Int64}} = RangeData(27:27)
     dr::R{RangeData{Int64}} = RangeData(500:500)
     mr::R{RangeData{Int64}} = RangeData(10:10)
 
@@ -51,14 +50,13 @@ function launch_simulations_ui(model::LaunchSimulationsPage)
         worker_path = srcdir("Dashboard","simulation_worker.jl")
         threads = TumorSim.Config["Worker"]["threads"]
 
-        worker = `julia -p $threads --check-bounds=yes --project=$(projectdir()) $worker_path 
-                        $(model.pr[].range.start/1000) 0.005 $(model.pr[].range.stop/1000) 
+        worker = `julia -p $threads --check-bounds=yes $worker_path 
                         $(model.dr[].range.start/1000) 0.05 $(model.dr[].range.stop/1000) 
                         $(model.mr[].range.start/1000) 0.005 $(model.mr[].range.stop/1000) 
-                        1000000 
+                        10000 
                         $(join(model.scenario[],"")) 
                         10 
-                        $(model.detecting_size[].range.start) 100 $(model.detecting_size[].range.stop)
+                        $(model.detecting_size[].range.start) 500 $(model.detecting_size[].range.stop)
                         $(model.starting_size[].range.start/1000) 0.05 $(model.starting_size[].range.stop/1000)
                         $(model.pausing_size[].range.start/1000) 0.05 $(model.pausing_size[].range.stop/1000)
                         $(model.kill_rate[].range.start/1000) 0.05 $(model.kill_rate[].range.stop/1000)
@@ -66,6 +64,7 @@ function launch_simulations_ui(model::LaunchSimulationsPage)
                         $(model.repetitions[])
                         $(model.name[])`
         println(worker)
+        #Aquí deberiamos de crear el archivo donde se va a guardar el log y poner algo como "Inicializando..." para que aparezca instantaneamente.
         #run(worker, wait=false)
         @async run(worker)
     end
@@ -75,8 +74,8 @@ function launch_simulations_ui(model::LaunchSimulationsPage)
         println("Canceling simulation")
     end
 
-    onany(model.dr, model.pr, model.mr, model.cr, model.detecting_size, model.starting_size, model.pausing_size, model.kill_rate, model.scenario, model.repetitions) do (_...)
-        model.predicted_simulations[] = 2 * length(model.dr[].range.start:50:model.dr[].range.stop) * length(model.pr[].range.start:5:model.pr[].range.stop) * length(model.mr[].range.start:5:model.mr[].range.stop) *  length(model.cr[].range.start:50:model.cr[].range.stop) *  length(model.detecting_size[].range.start:100:model.detecting_size[].range.stop) *  length(model.starting_size[].range.start:50:model.starting_size[].range.stop) *  length(model.pausing_size[].range.start:50:model.pausing_size[].range.stop) *  length(model.kill_rate[].range.start:50:model.kill_rate[].range.stop) * length(model.scenario[]) * model.repetitions[]
+    onany(model.dr, model.mr, model.cr, model.detecting_size, model.starting_size, model.pausing_size, model.kill_rate, model.scenario, model.repetitions) do (_...)
+        model.predicted_simulations[] = 2 * length(model.dr[].range.start:50:model.dr[].range.stop) * length(model.mr[].range.start:5:model.mr[].range.stop) *  length(model.cr[].range.start:50:model.cr[].range.stop) *  length(model.detecting_size[].range.start:500:model.detecting_size[].range.stop) *  length(model.starting_size[].range.start:50:model.starting_size[].range.stop) *  length(model.pausing_size[].range.start:50:model.pausing_size[].range.stop) *  length(model.kill_rate[].range.start:50:model.kill_rate[].range.stop) * length(model.scenario[]) * model.repetitions[]
     end
 
     page(model, class="container", title="TumorSim Simulation Dashboard",
@@ -142,15 +141,6 @@ function launch_simulations_ui(model::LaunchSimulationsPage)
                 cell(
                     class="st-module",
                     [
-                        h6("Proliferation rate (x1000)")
-                        Stipple.range(0:10:200,
-                            @data(:pr);
-                            label=true)
-                    ]
-                )
-                cell(
-                    class="st-module",
-                    [
                         h6("Death rate (x1000)(Turnover)")
                         Stipple.range(0:50:1000,
                             @data(:dr);
@@ -179,7 +169,7 @@ function launch_simulations_ui(model::LaunchSimulationsPage)
                     class="st-module",
                     [
                         h6("Detecting size")
-                        Stipple.range(0:100:5000,
+                        Stipple.range(0:500:5000,
                             @data(:detecting_size);
                             label=true)
                     ]

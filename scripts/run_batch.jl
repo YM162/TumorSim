@@ -12,66 +12,28 @@ using BSON
 using DataFrames
 using Dates
 #With the same fitness we can change the cost of resistance
-fitness1=Dict([0,0,0]=>1, 
-                [1,0,0]=>1.3,
-                [0,1,0]=>1.2,
-                [1,1,0]=>1.5,
-                [1,1,1]=>0.6)
 
-fitness2=Dict([0,0,0]=>1, 
-                [1,0,0]=>1.3,
-                [0,1,0]=>1.2,
-                [1,1,0]=>1.5,
-                [1,1,1]=>0.8)
-
-fitness3=Dict([0,0,0]=>1, 
-                [1,0,0]=>1.3,
-                [0,1,0]=>1.2,
-                [1,1,0]=>1.5,
-                [1,1,1]=>1)
-
-fitness4=Dict([0,0,0]=>1, 
-                [1,0,0]=>1.3,
-                [0,1,0]=>1.2,
-                [1,1,0]=>1.5,
-                [1,1,1]=>1.5)
-
-fitness5=Dict([0,0,0]=>1, 
-                [1,0,0]=>1.3,
-                [0,1,0]=>1.2,
-                [1,1,0]=>1.5,
-                [1,1,1]=>1.5)
-                
-#We test the dimensionality.
-scenario_0D = create_scenario((1000000),10)
-scenario_1D = create_scenario((1000000,),10,"center")
-scenario_2D = create_scenario((1000,1000),10,"center")
-scenario_3D = create_scenario((100,100,100),10,"center")
 
 #We test adaptive and continuous therapy
-adaptive_therapy = create_treatment(3000, 0.65, 0.5, 3, 0.75) 
-continuous_therapy = create_treatment(3000, 0.65, 0.0, 3, 0.75) 
+fitness=Dict([0,0,0]=>0.027, 
+            [1,0,0]=>0.03,
+            [0,1,0]=>0.033,
+            [1,1,0]=>0.035,
+            [1,1,1]=>0.035)
+
+scenario = create_scenario((100,100),10)
+
+adaptive_therapy = create_treatment(3000, 0.8, 0.5, 3, 0.75) 
+continuous_therapy = create_treatment(3000, 0.8, 0.0, 3, 0.75) 
 
 parameters = Dict(
-    "pr" => [0.015,0.02,0.025,0.03,0.04],
-    "dr" => [0.2,0.3,0.4,0.5,0.6,0.7],
-    "mr" => [0.01,0.05,0.2],  
-    "scenario" => [scenario_3D], 
-    "fitness" => [fitness4],
-    "cr" => [0.0,0.1,0.3,0.4,0.5,0.7],
+    "dr" => 0.0,
+    "mr" => 0.01,
+    "scenario" => scenario, 
+    "fitness" => fitness,
     "treatment" => [adaptive_therapy,continuous_therapy],
+    "cr" => 0.3,
     "seed" => map(abs,rand(Int64,10))
-)
-
-parameters = Dict(
-    "pr" => [0.015,0.02],
-    "dr" => [0.4,0.5],
-    "mr" => [0.01],  
-    "scenario" => [scenario_3D], 
-    "fitness" => [fitness4],
-    "cr" => [0.0,0.5],
-    "treatment" => [adaptive_therapy,continuous_therapy],
-    "seed" => map(abs,rand(Int64,1))
 )
 
 parameter_combinations = dict_list(parameters)
@@ -91,7 +53,6 @@ filepath = datadir("simulations",filename*".bson")
 bson(filepath,Dict("df" => df))
 
 println(df[!,"TTP"])
-
 
 
 

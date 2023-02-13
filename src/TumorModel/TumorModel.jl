@@ -15,13 +15,12 @@ module TumorModel
     #We create the Cell agent
     @agent Cell GridAgent{3} begin
             time_alive::Int  # Time the cell has been alive
-            near_cells::Number # Number of cells in the neighborhood
             genotype::BitArray # Genotype of the cell
             phylogeny::Array{Int} # Phylogeny of the cell
     end
 
     #We initialize the model according to some parameters.
-    function  model_init(;seed::Int64,pr::Float64,dr::Float64,mr::Float64,fitness::Dict{Vector{Int64},Real},cr::Float64,scenario::ScenarioObject,treatment::TreatmentObject)
+    function  model_init(;seed::Int64,dr::Float64,mr::Float64,fitness::Dict{Vector{Int64},Float64},cr::Float64,scenario::ScenarioObject,treatment::TreatmentObject)
         #We need to do this to reuse the treatment in paramscan
         treatment = TreatmentObject(treatment.detecting_size,
                                 treatment.starting_size,
@@ -40,7 +39,6 @@ module TumorModel
 
         ngenes::Int=length(collect(keys(fitness))[1])
         
-
         #Apply cr to fitness
         for i in keys(fitness)
             if i[treatment.resistance_gene]==1
@@ -54,7 +52,7 @@ module TumorModel
         rng = MersenneTwister(seed)
 
         if y!=0 && z!=0
-            space = GridSpace((x, y, z),periodic=false)
+            space = GridSpaceSingle((x, y, z),periodic=false) #Que sea gridspacesingle
 
             #we create the walls visualization matrix
             wall_matrix=zeros(Int8, x, y, z)
@@ -83,19 +81,19 @@ module TumorModel
                 end
             end
             
-            properties=@dict(pr,dr,mr,fitness,wall_pos,wall_matrix,treatment,scenario,current_size)
+            properties=@dict(dr,mr,fitness,wall_pos,wall_matrix,treatment,scenario,current_size,ngenes)
             model = ABM(Cell, space;properties, rng) 
             #we create each cell
             for cell in cell_pos
-                add_agent!((cell[1],cell[2],cell[3]),model,0,0,BitArray([false for x in 1:ngenes]),[]) # With this one we use the scenario
+                add_agent!((cell[1],cell[2],cell[3]),model,0,BitArray([false for x in 1:ngenes]),[]) # With this one we use the scenario
             end
         else
             space = GridSpace((1,1,1),periodic=false)
             wall_matrix=zeros(Int8, 1)
-            properties=@dict(pr,dr,mr,fitness,wall_pos,wall_matrix,treatment,scenario,current_size)
+            properties=@dict(dr,mr,fitness,wall_pos,wall_matrix,treatment,scenario,current_size,ngenes)
             model = ABM(Cell, space;properties, rng) 
             for cell in cell_pos
-                add_agent!(model,0,0,BitArray([false for x in 1:ngenes]),[]) # With this one we use the scenario
+                add_agent!(model,0,BitArray([false for x in 1:ngenes]),[]) # With this one we use the scenario
             end
         end
 
@@ -103,30 +101,23 @@ module TumorModel
     end
 
     #Function to get the number of cells "near" each cell.
-    function get_near!(agent,model)
-        if model.scenario.z==0 #If we are in 0D
-
-            bin = Binomial(nagents(model),1/model.scenario.x)
-            return (nagents(model)/model.scenario.x)/(1-pdf(bin,0)) #We calculate the mean number of cells in each cell´s space using a binomial distribution.
-
-        end
-        return length(ids_in_position(agent, model))
-    end
 
     #Step evey agent, updating its parameters and then reproducing, moving and dying.
     function agent_step!(agent, model)
         agent.time_alive += 1
-        agent.near_cells = get_near!(agent,model)
         
-        if reproduce!(agent, model) #We want to stop doing things if the cell has died.
-            return
-        end
-        if model.scenario.z!=0 #We dont move if we are in 0D
-            move!(agent, model)
-        end
         if die!(agent, model)
             return
         end
+
+        if reproduce!(agent, model) #We want to stop doing things if the cell has died.
+            return
+        end
+        
+        #if model.scenario.z!=0 && rand(model.rng) < 0.25 #We dont move if we are in 0D also experimental rand move
+        #    move!(agent, model)
+        #end
+        
     end
 
     #We use the model step to evaluate the treatment
@@ -176,10 +167,13 @@ module TumorModel
     #with a probability p choose a random non mutated gene and mutate it.
     function mutate!(agent,model)
         genes=findall(agent.genotype .!=1)
-        if genes!=[] && rand(model.rng) < model.mr
-            gene::Int = rand(model.rng,genes)
-            agent.genotype[gene]=true
-            push!(agent.phylogeny,gene)
+        if genes!=[] 
+            for gene in genes
+                if rand(model.rng) < model.mr
+                    agent.genotype[gene]=true
+                    push!(agent.phylogeny,gene)
+                end
+            end
         end
     end
 
@@ -187,21 +181,21 @@ module TumorModel
     #With a probability (the kill rate of the treatment), the cell is subjected to a treatment check.
     #Returns true if the cell has died.
     function reproduce!(agent,model)
-        pr = model.pr*model.fitness[agent.genotype]
-        pid = agent.pos
         newgenom::BitArray = copy(agent.genotype)
         newphylo::Array{Int64} = copy(agent.phylogeny)
-        prob = pr/(get_near!(agent,model)^2)
-        if rand(model.rng) < prob/(1+prob)
+
+        npos = nearby_positions(agent,model,1)
+        empty_pos = [pos for pos in npos if isempty(pos,model)]
+        if empty_pos!=[] && rand(model.rng) < model.fitness[agent.genotype]
             if rand(model.rng) < model.treatment.kill_rate
                 if treat!(agent,model)
                     return true
                 end
             end
-            newagent = add_agent!(pid,model,0,0,newgenom,newphylo)
+            newpos = sample(model.rng,empty_pos)
+            newagent = add_agent!(newpos,model,0,newgenom,newphylo)
             mutate!(newagent,model)
             kill_non_viable!(newagent, model)
-
             mutate!(agent,model)
             if kill_non_viable!(agent, model)
                 return true
@@ -229,8 +223,9 @@ module TumorModel
 
     #die, with a probability that increases with the number of cells that are in its space. returns true if the cell has died.
     function die!(agent, model)
-        prob = model.pr*model.dr*(get_near!(agent,model)^2)
-        if rand(model.rng) < prob/(1+prob)
+
+        #Base apoptosis rate (Turnover)
+        if rand(model.rng) < model.fitness[BitArray([false for x in 1:model.ngenes])]*model.dr
             kill_agent!(agent, model)
             return true
         end

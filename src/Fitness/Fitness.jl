@@ -1,8 +1,10 @@
 #A generator that returns a list of functions that each get the number of cells of each genotype given a number of genes.
+#Now fitness is birth rate for each genotype.
+
 module Fitness
     export genotype_fraction_function_generator, bit_2_int
     
-    function genotype_fraction_function_generator(fitness::Dict{Vector{Int64},Real},)
+    function genotype_fraction_function_generator(fitness::Dict{Vector{Int64},Float64},)
         functions = []
         for i in [x for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
             compare = i

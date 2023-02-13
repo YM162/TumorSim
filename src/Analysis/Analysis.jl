@@ -20,9 +20,12 @@ module Analysis
             countmap(row[2:end])
             species_richness::Int64 = count([x!=0 for x in row[2:end]])
             relative_frequencies::Vector{Float64} = collect(row[2:end])./collect(sum(row[2:end]))
+            
+            filter!((x) -> x != 0, relative_frequencies)
+
             shannon_index::Float64 = -sum([x*log(x) for x in relative_frequencies])
             evenness::Float64 = shannon_index/log(species_richness)
-            if shannon_index === NaN
+            if shannon_index === NaN || shannon_index == -0.0
                 shannon_index=0
                 evenness=0
             end
