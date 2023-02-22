@@ -86,6 +86,7 @@ parameters = Dict(
     "mutation_rate" => collect(mutation_rate_low:mutation_rate_step:mutation_rate_high), 
     "scenario" => scenario,
     "fitness" => fitness,
+    "migration_rate" => 0.05,
     "cost_of_resistance" => collect(cost_of_resistance_low:cost_of_resistance_step:cost_of_resistance_high),
     "treatment" => append!(adaptive_therapy,continuous_therapy),
     "seed" => map(abs,rand(Int64,repetitions))

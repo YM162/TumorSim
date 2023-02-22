@@ -87,17 +87,17 @@ end
 @testset "TumorModel tests" begin
     #2D init
     treatment = create_treatment(3000,0.65,0.5,3,0.75)
-    scenario = create_scenario((10,10),5,"center")
+    scenario = create_scenario((10,10),5,"center",false)
     fitness=Dict([0,0,0]=>0.027, [1,0,0]=>0.035)
-    model = TumorSim.model_init(death_rate=0.55, mutation_rate=0.01, scenario=scenario, fitness=fitness,treatment=treatment, cost_of_resistance = 0.2, seed=0)
+    model = TumorSim.model_init(death_rate=0.55, mutation_rate=0.01, migration_rate = 0.05, scenario=scenario, fitness=fitness,treatment=treatment, cost_of_resistance = 0.2, seed=0)
     agent = collect(allagents(model))[1]
     @test nagents(model) == 5
     @test agent.time_alive == 0
     @test agent.genotype == BitArray([0,0,0])
     @test agent.phylogeny == []
     #3D
-    scenario = create_scenario((10,10,10),5,"center")
-    model = TumorSim.model_init(death_rate=0.55, mutation_rate=0.01, scenario=scenario, fitness=fitness,treatment=treatment, cost_of_resistance = 0.2, seed=0)
+    scenario = create_scenario((10,10,10),5,"center",true)
+    model = TumorSim.model_init(death_rate=0.55, mutation_rate=0.01, migration_rate = 0.05, scenario=scenario, fitness=fitness,treatment=treatment, cost_of_resistance = 0.2, seed=0)
     agent = collect(allagents(model))[1]
     @test nagents(model) == 5
     @test agent.time_alive == 0
@@ -119,6 +119,7 @@ params = Dict(
     "scenario" => scenario, 
     "fitness" => fitness,
     "treatment" => treatment,
+    "migration_rate" => 0.05,
     "cost_of_resistance" => 0.2,
     "seed" => 0
 )
@@ -131,7 +132,7 @@ adata2 = results[2]["Genotypes"]
 
 @testset "Simulate tests" begin
     @test length(results) == 2
-    @test length(results[1]) == 19
+    @test length(results[1]) == 21
     @test length(eachcol(adata1)) == 6
     @test length(eachrow(adata1)) != 0
     @test length(eachrow(adata1)) > length(eachrow(adata2))
@@ -141,7 +142,7 @@ end
     TTP1 = get_TTP(adata1,3200)
     TTP2 = get_TTP(adata2,3200)
     @test TTP1 != -1
-    @test TTP2 == -1
+    @test TTP2 == -2
 
     diversity = get_diversity(adata1)
     @test length(eachcol(diversity)) == 3
@@ -150,10 +151,10 @@ end
     @test diversity[!,"shannon_index"][1] == 0
     @test diversity[!,"evenness"][1] == 0
 
-    @test diversity[!,"species_richness"][500] > 1
-    @test diversity[!,"shannon_index"][500] > 0
-    @test diversity[!,"evenness"][500] > 0
-    @test diversity[!,"evenness"][500] < 1
+    @test diversity[!,"species_richness"][400] > 1
+    @test diversity[!,"shannon_index"][400] > 0
+    @test diversity[!,"evenness"][400] > 0
+    @test diversity[!,"evenness"][400] < 1
 
 end
 
