@@ -21,28 +21,28 @@
 
     
                                           
-    detecting_size::R{RangeData{Int64}} = RangeData(0:5000)
+    detecting_size::R{RangeData{Int64}} = RangeData(0:10000)
     starting_size::R{RangeData{Int64}} = RangeData(0:1000)
     pausing_size::R{RangeData{Int64}} = RangeData(0:1000)
 
-    dr::R{RangeData{Int64}} = RangeData(0:1000)
-    mr::R{RangeData{Int64}} = RangeData(0:200)
+    death_rate::R{RangeData{Int64}} = RangeData(0:1000)
+    mutation_rate::R{RangeData{Int64}} = RangeData(0:1000)
 
-    cr::R{RangeData{Int64}} = RangeData(0:1000)
+    cost_of_resistance::R{RangeData{Int64}} = RangeData(0:1000)
 
     kill_rate::R{RangeData{Int64}} = RangeData(0:1000)
 
     repetitions::R{Int64} = 10
 
-    x_variable_list::R{Vector{Symbol}} = [ :dr, :mr, :cr, :t_kill_rate, :t_detecting_size, :t_starting_size, :t_pausing_size, :s_dim]
-    x_variable::R{Symbol} = :dr
+    x_variable_list::R{Vector{Symbol}} = [ :death_rate, :mutation_rate, :cost_of_resistance, :t_kill_rate, :t_detecting_size, :t_starting_size, :t_pausing_size, :s_dim]
+    x_variable::R{Symbol} = :death_rate
     y_variable_list::R{Vector{Symbol}} = [:TTP, :recovery_rate]
     y_variable::R{Symbol} = :TTP
     plot_data::R{Vector{PlotData}} = []
     layout::R{PlotLayout} = PlotLayout(
                                     plot_bgcolor = "#FFFFFF",
                                     title = PlotLayoutTitle(text="Simulation results", font=Font(24)),
-                                    xaxis = [PlotLayoutAxis(xy="x",title_text="dr")],
+                                    xaxis = [PlotLayoutAxis(xy="x",title_text="death_rate")],
                                     yaxis = [PlotLayoutAxis(xy="y",title_text="TTP")],
                                     )
    #Hay que cambiar todo lo de la 2 para que sea X en función del tiempo.
@@ -69,9 +69,9 @@ function tumorPlot(model::ViewResultsPage,name)
     end
 
     #We apply all Filters
-    filter!((row) -> (row["dr"] >= (model.dr[].range.start/1000)) & (row["dr"] <= (model.dr[].range.stop/1000)), data)
-    filter!((row) -> (row["mr"] >= (model.mr[].range.start/1000)) & (row["mr"] <= (model.mr[].range.stop/1000)), data)
-    filter!((row) -> (row["cr"] >= (model.cr[].range.start/1000)) & (row["cr"] <= (model.cr[].range.stop/1000)), data)
+    filter!((row) -> (row["death_rate"] >= (model.death_rate[].range.start/1000)) & (row["death_rate"] <= (model.death_rate[].range.stop/1000)), data)
+    filter!((row) -> (row["mutation_rate"] >= (model.mutation_rate[].range.start/1000)) & (row["mutation_rate"] <= (model.mutation_rate[].range.stop/1000)), data)
+    filter!((row) -> (row["cost_of_resistance"] >= (model.cost_of_resistance[].range.start/1000)) & (row["cost_of_resistance"] <= (model.cost_of_resistance[].range.stop/1000)), data)
     filter!((row) -> (row["t_kill_rate"] >= (model.kill_rate[].range.start/1000)) & (row["t_kill_rate"] <= (model.kill_rate[].range.stop/1000)), data)
     filter!((row) -> (row["t_starting_size"] >= (model.starting_size[].range.start/1000)) & (row["t_starting_size"] <= (model.starting_size[].range.stop/1000)), data)
     filter!((row) -> (row["t_detecting_size"] >= (model.detecting_size[].range.start)) & (row["t_detecting_size"] <= (model.detecting_size[].range.stop)), data)
@@ -125,9 +125,9 @@ function tumorPlot2(model::ViewResultsPage,name)
     end
 
     #We apply all Filters
-    filter!((row) -> (row["dr"] >= (model.dr[].range.start/1000)) & (row["dr"] <= (model.dr[].range.stop/1000)), data)
-    filter!((row) -> (row["mr"] >= (model.mr[].range.start/1000)) & (row["mr"] <= (model.mr[].range.stop/1000)), data)
-    filter!((row) -> (row["cr"] >= (model.cr[].range.start/1000)) & (row["cr"] <= (model.cr[].range.stop/1000)), data)
+    filter!((row) -> (row["death_rate"] >= (model.death_rate[].range.start/1000)) & (row["death_rate"] <= (model.death_rate[].range.stop/1000)), data)
+    filter!((row) -> (row["mutation_rate"] >= (model.mutation_rate[].range.start/1000)) & (row["mutation_rate"] <= (model.mutation_rate[].range.stop/1000)), data)
+    filter!((row) -> (row["cost_of_resistance"] >= (model.cost_of_resistance[].range.start/1000)) & (row["cost_of_resistance"] <= (model.cost_of_resistance[].range.stop/1000)), data)
     filter!((row) -> (row["t_kill_rate"] >= (model.kill_rate[].range.start/1000)) & (row["t_kill_rate"] <= (model.kill_rate[].range.stop/1000)), data)
     filter!((row) -> (row["t_starting_size"] >= (model.starting_size[].range.start/1000)) & (row["t_starting_size"] <= (model.starting_size[].range.stop/1000)), data)
     filter!((row) -> (row["t_detecting_size"] >= (model.detecting_size[].range.start)) & (row["t_detecting_size"] <= (model.detecting_size[].range.stop)), data)
@@ -189,7 +189,6 @@ function ui(model::ViewResultsPage)
         unique!(model.simulations[])
         
         model.plot_data[] = [tumorPlot(model,"Continuous therapy");tumorPlot(model,"Adaptive therapy")]
-        model.plot_data2[] = [tumorPlot2(model,"Continuous therapy");tumorPlot2(model,"Adaptive therapy")]
         model.loading[] = false
     catch e
         @error "ERROR: " exception=(e, catch_backtrace())
@@ -203,9 +202,8 @@ function ui(model::ViewResultsPage)
     end
 
 
-    onany(model.y_variable2, model.x_variable, model.y_variable, model.dr, model.mr, model.cr, model.detecting_size, model.starting_size, model.pausing_size, model.kill_rate,model.scenario) do (_...)
+    onany(model.y_variable2, model.x_variable, model.y_variable, model.death_rate, model.mutation_rate, model.cost_of_resistance, model.detecting_size, model.starting_size, model.pausing_size, model.kill_rate,model.scenario) do (_...)
         model.plot_data[] = [tumorPlot(model,"Continuous therapy");tumorPlot(model,"Adaptive therapy")]
-        model.plot_data2[] = [tumorPlot2(model,"Continuous therapy");tumorPlot2(model,"Adaptive therapy")]
     end
 
     onany(model.simulations) do (_...)
@@ -283,22 +281,7 @@ function ui(model::ViewResultsPage)
                         ])
                         
                         plot(:plot_data, layout=:layout, config=:config)
-                        
-                        #Other plot
-                        row([
-                            cell(
-                                class="st-module",
-                                [
-                                    Stipple.select(:y_variable2; options=:y_variable_list2)
-                                ])
-                            cell(
-                                class="st-module",
-                                [
-                                    h5("by timestep")
-                                ])
-                        ])
-                        
-                        plot(:plot_data2, layout=:layout2, config=:config)
+                    
                         
                         ]
                 )
@@ -319,7 +302,7 @@ function ui(model::ViewResultsPage)
                             [
                                 h6("Death rate (x1000)(Turnover)")
                                 Stipple.range(0:50:1000,
-                                    @data(:dr);
+                                    @data(:death_rate);
                                     label=true)
                             ]
                         )
@@ -327,8 +310,8 @@ function ui(model::ViewResultsPage)
                             class="st-module",
                             [
                                 h6("Mutation rate (x1000)")
-                                Stipple.range(0:5:200,
-                                    @data(:mr);
+                                Stipple.range(0:1:1000,
+                                    @data(:mutation_rate);
                                     label=true)
                             ]
                         )
@@ -337,7 +320,7 @@ function ui(model::ViewResultsPage)
                             [
                                 h6("Cost of resistance (x1000)")
                                 Stipple.range(0:50:1000,
-                                    @data(:cr);
+                                    @data(:cost_of_resistance);
                                     label=true)
                             ]
                         )
@@ -345,7 +328,7 @@ function ui(model::ViewResultsPage)
                             class="st-module",
                             [
                                 h6("Detecting size")
-                                Stipple.range(0:100:5000,
+                                Stipple.range(0:100:9000,
                                     @data(:detecting_size);
                                     label=true)
                             ]

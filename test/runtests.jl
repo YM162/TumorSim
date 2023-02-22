@@ -34,47 +34,41 @@ ti = time()
 end
 
 @testset "Scenario tests" begin
-    #0D
-    scenario = create_scenario(10,3)
-    @test scenario.x == 10
-    @test scenario.y == 0
-    @test scenario.z == 0
-    @test length(scenario.cell_pos) == 3
     #1D
-    scenario = create_scenario((40,),4,"random",[(10,)])
-    scenario = create_scenario((40,),4,"center",[(10,)])
+    scenario = create_scenario((40,),4,"random")
+    scenario = create_scenario((40,),4,"center")
     @test scenario.x == 40
     @test scenario.y == 1
     @test scenario.z == 1
     @test length(scenario.cell_pos) == 4
 
-    scenario = create_scenario((40,),[(1,)],[(5,)])
+    scenario = create_scenario((40,),[(1,)])
     @test scenario.x == 40
     @test scenario.y == 1
     @test scenario.z == 1
     @test length(scenario.cell_pos) == 1
     #2D
-    scenario = create_scenario((15,20),5,"random",[(1,1)])
-    scenario = create_scenario((15,20),5,"center",[(1,1)])
+    scenario = create_scenario((15,20),5,"random")
+    scenario = create_scenario((15,20),5,"center")
     @test scenario.x == 15
     @test scenario.y == 20
     @test scenario.z == 1
     @test length(scenario.cell_pos) == 5
 
-    scenario = create_scenario((15,20),[(1,1),(2,2)],[(5,5)])
+    scenario = create_scenario((15,20),[(1,1),(2,2)])
     @test scenario.x == 15
     @test scenario.y == 20
     @test scenario.z == 1
     @test length(scenario.cell_pos) == 2
     #3D
-    scenario = create_scenario((16,17,18),19,"random",[(1,1,1)])
-    scenario = create_scenario((16,17,18),19,"center",[(1,1,1)])
+    scenario = create_scenario((16,17,18),19,"random")
+    scenario = create_scenario((16,17,18),19,"center")
     @test scenario.x == 16
     @test scenario.y == 17
     @test scenario.z == 18
     @test length(scenario.cell_pos) == 19
 
-    scenario = create_scenario((16,17,18),[(1,1,1),(2,2,2),(3,3,3)],[(5,5,5)])
+    scenario = create_scenario((16,17,18),[(1,1,1),(2,2,2),(3,3,3)])
     @test scenario.x == 16
     @test scenario.y == 17
     @test scenario.z == 18
@@ -91,19 +85,19 @@ end
 end
 
 @testset "TumorModel tests" begin
-    #0D init
-    treatment = create_treatment(3000,2000,1000,3,0.75)
-    scenario = create_scenario(10,5)
+    #2D init
+    treatment = create_treatment(3000,0.65,0.5,3,0.75)
+    scenario = create_scenario((10,10),5,"center")
     fitness=Dict([0,0,0]=>0.027, [1,0,0]=>0.035)
-    model = TumorSim.model_init(dr=0.55, mr=0.01, scenario=scenario, fitness=fitness,treatment=treatment, cr = 0.2, seed=0)
+    model = TumorSim.model_init(death_rate=0.55, mutation_rate=0.01, scenario=scenario, fitness=fitness,treatment=treatment, cost_of_resistance = 0.2, seed=0)
     agent = collect(allagents(model))[1]
     @test nagents(model) == 5
     @test agent.time_alive == 0
     @test agent.genotype == BitArray([0,0,0])
     @test agent.phylogeny == []
     #3D
-    scenario = create_scenario((10,10,10),5,"center",[(1,1,1)])
-    model = TumorSim.model_init(dr=0.55, mr=0.01, scenario=scenario, fitness=fitness,treatment=treatment, cr = 0.2, seed=0)
+    scenario = create_scenario((10,10,10),5,"center")
+    model = TumorSim.model_init(death_rate=0.55, mutation_rate=0.01, scenario=scenario, fitness=fitness,treatment=treatment, cost_of_resistance = 0.2, seed=0)
     agent = collect(allagents(model))[1]
     @test nagents(model) == 5
     @test agent.time_alive == 0
@@ -112,7 +106,7 @@ end
 end
 #Prepare a simulation
 treatment = create_treatment(3000,0.65,0.5,3,0.75)
-scenario = create_scenario((100,100,100),5,"center",[(1,1,1)])
+scenario = create_scenario((100,100,100),5,"center")
 fitness=Dict([0,0,0]=>0.027, 
             [1,0,0]=>0.035,
             [0,1,0]=>0.032,
@@ -120,12 +114,12 @@ fitness=Dict([0,0,0]=>0.027,
             [1,1,1]=>0.032)
 
 params = Dict(
-    "dr" => [0.55,2],
-    "mr" => 0.1,
+    "death_rate" => [0.55,2],
+    "mutation_rate" => 0.1,
     "scenario" => scenario, 
     "fitness" => fitness,
     "treatment" => treatment,
-    "cr" => 0.2,
+    "cost_of_resistance" => 0.2,
     "seed" => 0
 )
 
@@ -176,7 +170,7 @@ end
     
     worker_path = srcdir("Dashboard","simulation_worker.jl")
 
-    worker = `julia --check-bounds=yes --project=$(projectdir()) $worker_path 0.5 0.05 0.5 0.01 0.01 0.01 1000000 3 10 3000 100 3000 0.65 0.1 0.65 0.5 0.1 0.5 0.75 0.05 0.75 0.2 0.1 0.2 1 test`
+    worker = `julia --code-coverage --check-bounds=yes --project=$(projectdir()) $worker_path 0.5 0.05 0.5 0.01 0.01 0.01 1000000 3 10 3000 100 3000 0.65 0.1 0.65 0.5 0.1 0.5 0.75 0.05 0.75 0.2 0.1 0.2 1 test`
     run(worker)
 
     @test isfile(projectdir("logs","progress","test")) == true

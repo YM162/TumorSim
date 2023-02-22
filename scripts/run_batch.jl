@@ -11,29 +11,28 @@ using ProgressMeter
 using BSON
 using DataFrames
 using Dates
-#With the same fitness we can change the cost of resistance
-
 
 #We test adaptive and continuous therapy
 fitness=Dict([0,0,0]=>0.027, 
-            [1,0,0]=>0.03,
-            [0,1,0]=>0.033,
-            [1,1,0]=>0.035,
-            [1,1,1]=>0.035)
+            [1,0,0]=>0.031,
+            [0,1,0]=>0.035,
+            [1,1,0]=>0.040,
+            [1,1,1]=>0.040)
 
-scenario = create_scenario((100,100),10)
 
-adaptive_therapy = create_treatment(3000, 0.8, 0.5, 3, 0.75) 
-continuous_therapy = create_treatment(3000, 0.8, 0.0, 3, 0.75) 
+
+adaptive_therapy = create_treatment(3000, 1, 0.5, 3, 0.75) 
+continuous_therapy = create_treatment(3000, 1, 0.0, 3, 0.75) 
 
 parameters = Dict(
-    "dr" => 0.0,
-    "mr" => 0.01,
-    "scenario" => scenario, 
+    "death_rate" => [0.1,0.2,0.3],
+    "mutation_rate" => 0.01,
+    "scenario" => [create_scenario((100,100),10,"center",false),create_scenario((100,100),10,"center",true)], 
     "fitness" => fitness,
     "treatment" => [adaptive_therapy,continuous_therapy],
-    "cr" => 0.3,
-    "seed" => map(abs,rand(Int64,10))
+    "cost_of_resistance" => [0.1,0.2,0.3,0.4,0.5],
+    "migration_rate" => [0.0,0.05,0.5],
+    "seed" => map(abs,rand(Int64,50))
 )
 
 parameter_combinations = dict_list(parameters)

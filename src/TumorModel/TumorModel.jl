@@ -20,7 +20,7 @@ module TumorModel
     end
 
     #We initialize the model according to some parameters.
-    function  model_init(;seed::Int64,dr::Float64,mr::Float64,fitness::Dict{Vector{Int64},Float64},cr::Float64,scenario::ScenarioObject,treatment::TreatmentObject)
+    function model_init(;seed::Int64,death_rate::Float64,mutation_rate::Float64,migration_rate::Float64,fitness::Dict{Vector{Int64},Float64},cost_of_resistance::Float64,scenario::ScenarioObject,treatment::TreatmentObject)
         #We need to do this to reuse the treatment in paramscan
         treatment = TreatmentObject(treatment.detecting_size,
                                 treatment.starting_size,
@@ -34,15 +34,16 @@ module TumorModel
         y = scenario.y
         z = scenario.z
         cell_pos = scenario.cell_pos
-        wall_pos = scenario.wall_pos
+        fitness = copy(fitness)
+
         current_size::Int=length(cell_pos)
 
         ngenes::Int=length(collect(keys(fitness))[1])
         
-        #Apply cr to fitness
+        #Apply cost_of_resistance to fitness
         for i in keys(fitness)
             if i[treatment.resistance_gene]==1
-                fitness[i]=fitness[i]*(1-cr)
+                fitness[i]=fitness[i]*(1-cost_of_resistance)
             end
         end
 
@@ -51,50 +52,16 @@ module TumorModel
 
         rng = MersenneTwister(seed)
 
-        if y!=0 && z!=0
-            space = GridSpaceSingle((x, y, z),periodic=false) #Que sea gridspacesingle
+        space = GridSpaceSingle((x, y, z),periodic=false) 
+        
+        properties=@dict(death_rate,mutation_rate,fitness,treatment,scenario,current_size,ngenes,migration_rate)
 
-            #we create the walls visualization matrix
-            wall_matrix=zeros(Int8, x, y, z)
+        scheduler = Schedulers.Randomly()
 
-            #1D
-            if typeof(wall_pos)==Tuple{Int64}
-                for t in wall_pos
-                    (i,)=t
-                    wall_matrix[i,1,1]=1
-                end
-            end
-
-            #2D
-            if typeof(wall_pos)==Tuple{Int64,Int64}
-                for t in wall_pos
-                    (i,j)=t
-                    wall_matrix[i,j,1]=1
-                end
-            end
-
-            #3D
-            if typeof(wall_pos)==Tuple{Int64,Int64,Int64}
-                for t in wall_pos
-                    i,j,k=t
-                    wall_matrix[i,j,k]=1
-                end
-            end
-            
-            properties=@dict(dr,mr,fitness,wall_pos,wall_matrix,treatment,scenario,current_size,ngenes)
-            model = ABM(Cell, space;properties, rng) 
-            #we create each cell
-            for cell in cell_pos
-                add_agent!((cell[1],cell[2],cell[3]),model,0,BitArray([false for x in 1:ngenes]),[]) # With this one we use the scenario
-            end
-        else
-            space = GridSpace((1,1,1),periodic=false)
-            wall_matrix=zeros(Int8, 1)
-            properties=@dict(dr,mr,fitness,wall_pos,wall_matrix,treatment,scenario,current_size,ngenes)
-            model = ABM(Cell, space;properties, rng) 
-            for cell in cell_pos
-                add_agent!(model,0,BitArray([false for x in 1:ngenes]),[]) # With this one we use the scenario
-            end
+        model = ABM(Cell, space;properties, rng, scheduler) 
+        #we create each cell
+        for cell in cell_pos
+            add_agent!((cell[1],cell[2],cell[3]),model,0,BitArray([false for x in 1:ngenes]),[]) # With this one we use the scenario
         end
 
         return model
@@ -114,13 +81,11 @@ module TumorModel
             return
         end
         
-        #if model.scenario.z!=0 && rand(model.rng) < 0.25 #We dont move if we are in 0D also experimental rand move
-        #    move!(agent, model)
-        #end
-        
+        move!(agent, model)
+
     end
 
-    #We use the model step to evaluate the treatment
+    #We use the model step to evaluate the treatment and randomize cell positions
     function model_step!(model)
         current_size::Int = nagents(model)
         model.current_size = current_size
@@ -134,6 +99,15 @@ module TumorModel
         else
             if current_size > model.treatment.detecting_size
                 model.treatment.detected = true
+            end
+        end
+        #We randomize positions if mix is active
+        if model.scenario.mix
+            agents = allagents(model)
+            usedpositions = [agent.pos for agent in agents]
+            shuffle!(model.rng,usedpositions)
+            for (agent,pos) in zip(agents,usedpositions)
+                move_agent!(agent,pos,model)
             end
         end
     end
@@ -169,7 +143,7 @@ module TumorModel
         genes=findall(agent.genotype .!=1)
         if genes!=[] 
             for gene in genes
-                if rand(model.rng) < model.mr
+                if rand(model.rng) < model.mutation_rate
                     agent.genotype[gene]=true
                     push!(agent.phylogeny,gene)
                 end
@@ -204,20 +178,13 @@ module TumorModel
         return false
     end
 
-    #Move every cell to a random nearby space ONLY if your space is "crowded", crowded for example is more than 1 cell in your space 
+    #Move every cell to a random nearby space
     function move!(agent, model)
-        pos = agent.pos
-        nearby =  collect(nearby_positions(agent,model,1))
-        
-        setdiff!(nearby,model.wall_pos)
-        nearby_density = [1/(length(ids_in_position(x,model))+1) for x in nearby]
-        
-        push!(nearby,pos)
-        push!(nearby_density,1/length(ids_in_position(agent,model)))
-
-        newpos = sample(model.rng, nearby, Weights(nearby_density))
-        if length(ids_in_position(agent, model)) > 1
-            move_agent!(agent,newpos, model)
+        npos = nearby_positions(agent,model,1)
+        empty_pos = [pos for pos in npos if isempty(pos,model)]
+        if empty_pos!=[] && rand(model.rng) < model.migration_rate
+            newpos = sample(model.rng,empty_pos)
+            move_agent!(agent,newpos,model)
         end
     end
 
@@ -225,7 +192,7 @@ module TumorModel
     function die!(agent, model)
 
         #Base apoptosis rate (Turnover)
-        if rand(model.rng) < model.fitness[BitArray([false for x in 1:model.ngenes])]*model.dr
+        if rand(model.rng) < model.fitness[BitArray([false for x in 1:model.ngenes])]*model.death_rate
             kill_agent!(agent, model)
             return true
         end

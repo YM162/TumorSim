@@ -20,10 +20,10 @@
     starting_size::R{RangeData{Int64}} = RangeData(800:800)
     pausing_size::R{RangeData{Int64}} = RangeData(500:500)
 
-    dr::R{RangeData{Int64}} = RangeData(500:500)
-    mr::R{RangeData{Int64}} = RangeData(10:10)
+    death_rate::R{RangeData{Int64}} = RangeData(500:500)
+    mutation_rate::R{RangeData{Int64}} = RangeData(10:10)
 
-    cr::R{RangeData{Int64}} = RangeData(200:200)
+    cost_of_resistance::R{RangeData{Int64}} = RangeData(200:200)
 
     kill_rate::R{RangeData{Int64}} = RangeData(750:750)
 
@@ -51,8 +51,8 @@ function launch_simulations_ui(model::LaunchSimulationsPage)
         threads = TumorSim.Config["Worker"]["threads"]
 
         worker = `julia -p $threads --check-bounds=yes $worker_path 
-                        $(model.dr[].range.start/1000) 0.05 $(model.dr[].range.stop/1000) 
-                        $(model.mr[].range.start/1000) 0.005 $(model.mr[].range.stop/1000) 
+                        $(model.death_rate[].range.start/1000) 0.05 $(model.death_rate[].range.stop/1000) 
+                        $(model.mutation_rate[].range.start/1000) 0.005 $(model.mutation_rate[].range.stop/1000) 
                         10000 
                         $(join(model.scenario[],"")) 
                         10 
@@ -60,7 +60,7 @@ function launch_simulations_ui(model::LaunchSimulationsPage)
                         $(model.starting_size[].range.start/1000) 0.05 $(model.starting_size[].range.stop/1000)
                         $(model.pausing_size[].range.start/1000) 0.05 $(model.pausing_size[].range.stop/1000)
                         $(model.kill_rate[].range.start/1000) 0.05 $(model.kill_rate[].range.stop/1000)
-                        $(model.cr[].range.start/1000) 0.05 $(model.cr[].range.stop/1000)
+                        $(model.cost_of_resistance[].range.start/1000) 0.05 $(model.cost_of_resistance[].range.stop/1000)
                         $(model.repetitions[])
                         $(model.name[])`
         println(worker)
@@ -74,8 +74,8 @@ function launch_simulations_ui(model::LaunchSimulationsPage)
         println("Canceling simulation")
     end
 
-    onany(model.dr, model.mr, model.cr, model.detecting_size, model.starting_size, model.pausing_size, model.kill_rate, model.scenario, model.repetitions) do (_...)
-        model.predicted_simulations[] = 2 * length(model.dr[].range.start:50:model.dr[].range.stop) * length(model.mr[].range.start:5:model.mr[].range.stop) *  length(model.cr[].range.start:50:model.cr[].range.stop) *  length(model.detecting_size[].range.start:500:model.detecting_size[].range.stop) *  length(model.starting_size[].range.start:50:model.starting_size[].range.stop) *  length(model.pausing_size[].range.start:50:model.pausing_size[].range.stop) *  length(model.kill_rate[].range.start:50:model.kill_rate[].range.stop) * length(model.scenario[]) * model.repetitions[]
+    onany(model.death_rate, model.mutation_rate, model.cost_of_resistance, model.detecting_size, model.starting_size, model.pausing_size, model.kill_rate, model.scenario, model.repetitions) do (_...)
+        model.predicted_simulations[] = 2 * length(model.death_rate[].range.start:50:model.death_rate[].range.stop) * length(model.mutation_rate[].range.start:5:model.mutation_rate[].range.stop) *  length(model.cost_of_resistance[].range.start:50:model.cost_of_resistance[].range.stop) *  length(model.detecting_size[].range.start:500:model.detecting_size[].range.stop) *  length(model.starting_size[].range.start:50:model.starting_size[].range.stop) *  length(model.pausing_size[].range.start:50:model.pausing_size[].range.stop) *  length(model.kill_rate[].range.start:50:model.kill_rate[].range.stop) * length(model.scenario[]) * model.repetitions[]
     end
 
     page(model, class="container", title="TumorSim Simulation Dashboard",
@@ -143,7 +143,7 @@ function launch_simulations_ui(model::LaunchSimulationsPage)
                     [
                         h6("Death rate (x1000)(Turnover)")
                         Stipple.range(0:50:1000,
-                            @data(:dr);
+                            @data(:death_rate);
                             label=true)
                     ]
                 )
@@ -152,7 +152,7 @@ function launch_simulations_ui(model::LaunchSimulationsPage)
                     [
                         h6("Mutation rate (x1000)")
                         Stipple.range(0:5:200,
-                            @data(:mr);
+                            @data(:mutation_rate);
                             label=true)
                     ]
                 )
@@ -161,7 +161,7 @@ function launch_simulations_ui(model::LaunchSimulationsPage)
                     [
                         h6("Cost of resistance (x1000)")
                         Stipple.range(0:50:1000,
-                            @data(:cr);
+                            @data(:cost_of_resistance);
                             label=true)
                     ]
                 )
