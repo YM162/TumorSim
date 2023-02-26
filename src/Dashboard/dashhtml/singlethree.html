@@ -1,0 +1,396 @@
+<script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+<script type="importmap">
+    {
+    "imports": {
+    "three": "https://unpkg.com/three@0.150.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.150.0/examples/jsm/"
+    }
+    }
+    </script>
+
+<script type="module">
+    // Three.js - Voxel Geometry - UI
+    // from https://threejs.org/manual/examples/voxel-geometry-culled-faces-ui.html
+    
+    import * as THREE from "https://threejs.org/build/three.module.js";
+    import {OrbitControls} from 'https://threejs.org/examples/jsm/controls/OrbitControls.js';
+    
+    window.initvox =  function(){
+    
+    class VoxelWorld {
+      constructor(options) {
+        this.cellSize = options.cellSize;
+        this.tileSize = options.tileSize;
+        this.tileTextureWidth = options.tileTextureWidth;
+        this.tileTextureHeight = options.tileTextureHeight;
+        const {cellSize} = this;
+        this.cellSliceSize = cellSize * cellSize;
+        this.cells = {};
+      }
+      computeVoxelOffset(x, y, z) {
+        const {cellSize, cellSliceSize} = this;
+        const voxelX = THREE.MathUtils.euclideanModulo(x, cellSize) | 0;
+        const voxelY = THREE.MathUtils.euclideanModulo(y, cellSize) | 0;
+        const voxelZ = THREE.MathUtils.euclideanModulo(z, cellSize) | 0;
+        return voxelY * cellSliceSize +
+               voxelZ * cellSize +
+               voxelX;
+      }
+      computeCellId(x, y, z) {
+        const {cellSize} = this;
+        const cellX = Math.floor(x / cellSize);
+        const cellY = Math.floor(y / cellSize);
+        const cellZ = Math.floor(z / cellSize);
+        return `${cellX},${cellY},${cellZ}`;
+      }
+      addCellForVoxel(x, y, z) {
+        const cellId = this.computeCellId(x, y, z);
+        let cell = this.cells[cellId];
+        if (!cell) {
+          const {cellSize} = this;
+          cell = new Uint8Array(cellSize * cellSize * cellSize);
+          this.cells[cellId] = cell;
+        }
+        return cell;
+      }
+      getCellForVoxel(x, y, z) {
+        return this.cells[this.computeCellId(x, y, z)];
+      }
+      setVoxel(x, y, z, v, addCell = true) {
+        let cell = this.getCellForVoxel(x, y, z);
+        if (!cell) {
+          if (!addCell) {
+            return;
+          }
+          cell = this.addCellForVoxel(x, y, z);
+        }
+        const voxelOffset = this.computeVoxelOffset(x, y, z);
+        cell[voxelOffset] = v;
+      }
+    
+      //We need a function that sets an array
+      setVoxelArray(cellarray){
+        for (let i = 0; i < cellarray.length; i++) {
+          this.setVoxel(cellarray[i][0][0],cellarray[i][0][1],cellarray[i][0][2],cellarray[i][1]);
+    
+        }
+    
+    
+      }
+    
+    
+    
+      getVoxel(x, y, z) {
+        const cell = this.getCellForVoxel(x, y, z);
+        if (!cell) {
+          return 0;
+        }
+        const voxelOffset = this.computeVoxelOffset(x, y, z);
+        return cell[voxelOffset];
+      }
+      generateGeometryDataForCell(cellX, cellY, cellZ) {
+        const {cellSize, tileSize, tileTextureWidth, tileTextureHeight} = this;
+        const positions = [];
+        const normals = [];
+        const uvs = [];
+        const indices = [];
+        const startX = cellX * cellSize;
+        const startY = cellY * cellSize;
+        const startZ = cellZ * cellSize;
+    
+        for (let y = 0; y < cellSize; ++y) {
+          const voxelY = startY + y;
+          for (let z = 0; z < cellSize; ++z) {
+            const voxelZ = startZ + z;
+            for (let x = 0; x < cellSize; ++x) {
+              const voxelX = startX + x;
+              const voxel = this.getVoxel(voxelX, voxelY, voxelZ);
+              if (voxel) {
+                // voxel 0 is sky (empty) so for UVs we start at 0
+                const uvVoxel = voxel - 1;
+                // There is a voxel here but do we need faces for it?
+                for (const {dir, corners, uvRow} of VoxelWorld.faces) {
+                  const neighbor = this.getVoxel(
+                      voxelX + dir[0],
+                      voxelY + dir[1],
+                      voxelZ + dir[2]);
+                  if (!neighbor) {
+                    // this voxel has no neighbor in this direction so we need a face.
+                    const ndx = positions.length / 3;
+                    for (const {pos, uv} of corners) {
+                      positions.push(pos[0] + x, pos[1] + y, pos[2] + z);
+                      normals.push(...dir);
+                      uvs.push(
+                            (uvVoxel +   uv[0]) * tileSize / tileTextureWidth,
+                        1 - (uvRow + 1 - uv[1]) * tileSize / tileTextureHeight);
+                    }
+                    indices.push(
+                      ndx, ndx + 1, ndx + 2,
+                      ndx + 2, ndx + 1, ndx + 3,
+                    );
+                  }
+                }
+              }
+            }
+          }
+        }
+    
+        return {
+          positions,
+          normals,
+          uvs,
+          indices,
+        };
+      }
+    }
+    
+    VoxelWorld.faces = [
+      { // left
+        uvRow: 0,
+        dir: [ -1,  0,  0, ],
+        corners: [
+          { pos: [ 0, 1, 0 ], uv: [ 0, 1 ], },
+          { pos: [ 0, 0, 0 ], uv: [ 0, 0 ], },
+          { pos: [ 0, 1, 1 ], uv: [ 1, 1 ], },
+          { pos: [ 0, 0, 1 ], uv: [ 1, 0 ], },
+        ],
+      },
+      { // right
+        uvRow: 0,
+        dir: [  1,  0,  0, ],
+        corners: [
+          { pos: [ 1, 1, 1 ], uv: [ 0, 1 ], },
+          { pos: [ 1, 0, 1 ], uv: [ 0, 0 ], },
+          { pos: [ 1, 1, 0 ], uv: [ 1, 1 ], },
+          { pos: [ 1, 0, 0 ], uv: [ 1, 0 ], },
+        ],
+      },
+      { // bottom
+        uvRow: 1,
+        dir: [  0, -1,  0, ],
+        corners: [
+          { pos: [ 1, 0, 1 ], uv: [ 1, 0 ], },
+          { pos: [ 0, 0, 1 ], uv: [ 0, 0 ], },
+          { pos: [ 1, 0, 0 ], uv: [ 1, 1 ], },
+          { pos: [ 0, 0, 0 ], uv: [ 0, 1 ], },
+        ],
+      },
+      { // top
+        uvRow: 2,
+        dir: [  0,  1,  0, ],
+        corners: [
+          { pos: [ 0, 1, 1 ], uv: [ 1, 1 ], },
+          { pos: [ 1, 1, 1 ], uv: [ 0, 1 ], },
+          { pos: [ 0, 1, 0 ], uv: [ 1, 0 ], },
+          { pos: [ 1, 1, 0 ], uv: [ 0, 0 ], },
+        ],
+      },
+      { // back
+        uvRow: 0,
+        dir: [  0,  0, -1, ],
+        corners: [
+          { pos: [ 1, 0, 0 ], uv: [ 0, 0 ], },
+          { pos: [ 0, 0, 0 ], uv: [ 1, 0 ], },
+          { pos: [ 1, 1, 0 ], uv: [ 0, 1 ], },
+          { pos: [ 0, 1, 0 ], uv: [ 1, 1 ], },
+        ],
+      },
+      { // front
+        uvRow: 0,
+        dir: [  0,  0,  1, ],
+        corners: [
+          { pos: [ 0, 0, 1 ], uv: [ 0, 0 ], },
+          { pos: [ 1, 0, 1 ], uv: [ 1, 0 ], },
+          { pos: [ 0, 1, 1 ], uv: [ 0, 1 ], },
+          { pos: [ 1, 1, 1 ], uv: [ 1, 1 ], },
+        ],
+      },
+    ];
+    
+    
+      const canvas = document.querySelector('#c');
+      const renderer = new THREE.WebGLRenderer({antialias: true, canvas});
+    
+      const cellSize = 100;
+    
+      const fov = 75;
+      const aspect = 1;  // the canvas default
+      const near = 0.1;
+      const far = 1000;
+      const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+      camera.position.set(cellSize * .75, cellSize * .75, cellSize * .75);
+    
+      const controls = new OrbitControls(camera, canvas);
+      controls.target.set(cellSize / 2, cellSize / 2, cellSize / 2);
+      controls.update();
+    
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color('lightblue');
+    
+      const tileSize = 1;
+      const tileTextureWidth = 159;
+      const tileTextureHeight = 9;
+      const loader = new THREE.TextureLoader();
+      const texture = loader.load('https://i.ibb.co/NZyHwVY/Every-pixel-has-a-random-color.png', render);
+      texture.magFilter = THREE.NearestFilter;
+      texture.minFilter = THREE.NearestFilter;
+    
+      function addLight(x, y, z) {
+        const color = 0xFFFFFF;
+        const intensity = 0.9;
+        const light = new THREE.DirectionalLight(color, intensity);
+        light.position.set(x, y, z);
+        scene.add(light);
+      }
+      addLight(1,  1,  1);
+      addLight(-1 , 1, -1);
+      const light = new THREE.AmbientLight( 0x404040 ); // soft white light
+      scene.add( light, 10);
+    
+      window.world = new VoxelWorld({
+        cellSize,
+        tileSize,
+        tileTextureWidth,
+        tileTextureHeight,
+      });
+    
+      const material = new THREE.MeshLambertMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        alphaTest: 0.1,
+        transparent: true,
+      });
+    
+      const cellIdToMesh = {};
+       window.updateCellGeometry = function(x, y, z) {
+        const cellX = Math.floor(x / cellSize);
+        const cellY = Math.floor(y / cellSize);
+        const cellZ = Math.floor(z / cellSize);
+        const cellId = window.world.computeCellId(x, y, z);
+        let mesh = cellIdToMesh[cellId];
+        const geometry = mesh ? mesh.geometry : new THREE.BufferGeometry();
+    
+        const {positions, normals, uvs, indices} = window.world.generateGeometryDataForCell(cellX, cellY, cellZ);
+        const positionNumComponents = 3;
+        geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), positionNumComponents));
+        const normalNumComponents = 3;
+        geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals), normalNumComponents));
+        const uvNumComponents = 2;
+        geometry.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs), uvNumComponents));
+        geometry.setIndex(indices);
+        geometry.computeBoundingSphere();
+    
+        if (!mesh) {
+          mesh = new THREE.Mesh(geometry, material);
+          mesh.name = cellId;
+          cellIdToMesh[cellId] = mesh;
+          scene.add(mesh);
+          mesh.position.set(cellX * cellSize, cellY * cellSize, cellZ * cellSize);
+        }
+      }
+    
+      const neighborOffsets = [
+        [ 0,  0,  0], // self
+        [-1,  0,  0], // left
+        [ 1,  0,  0], // right
+        [ 0, -1,  0], // down
+        [ 0,  1,  0], // up
+        [ 0,  0, -1], // back
+        [ 0,  0,  1], // front
+      ];
+     window.updateVoxelGeometry = function (x, y, z) {
+        const updatedCellIds = {};
+        for (const offset of neighborOffsets) {
+          const ox = x + offset[0];
+          const oy = y + offset[1];
+          const oz = z + offset[2];
+          const cellId = window.world.computeCellId(ox, oy, oz);
+          if (!updatedCellIds[cellId]) {
+            updatedCellIds[cellId] = true;
+            window.updateCellGeometry(ox, oy, oz);
+          }
+        }
+      }
+    
+      function randInt(min, max) {
+        return Math.floor(Math.random() * (max - min) + min);
+      }
+    
+      window.updateVoxelGeometry(1, 1, 1);  // 0,0,0 will generate
+    
+      function resizeRendererToDisplaySize(renderer) {
+        const canvas = renderer.domElement;
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight ;
+        const needResize = canvas.width !== width || canvas.height !== height;
+        if (needResize) {
+          renderer.setSize(width, height, false);
+        }
+        return needResize;
+      }
+    
+      let renderRequested = false;
+    
+      function render() {
+        renderRequested = undefined;
+    
+        if (resizeRendererToDisplaySize(renderer)) {
+          const canvas = renderer.domElement;
+          camera.aspect = canvas.clientWidth / canvas.clientHeight;
+          camera.updateProjectionMatrix();
+        }
+    
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      render();
+    
+      window.requestRenderIfNotRequested = function () {
+        if (!renderRequested) {
+          renderRequested = true;
+          requestAnimationFrame(render);
+        }
+      }
+    
+      let currentVoxel = 0;
+      let currentId;
+    
+    
+      function allowUncheck() {
+        if (this.id === currentId) {
+          this.checked = false;
+          currentId = undefined;
+          currentVoxel = 0;
+        } else {
+          currentId = this.id;
+          currentVoxel = parseInt(this.value);
+        }
+      }
+    
+      function getCanvasRelativePosition(event) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: (event.clientX - rect.left) * canvas.width  / rect.width,
+          y: (event.clientY - rect.top ) * canvas.height / rect.height,
+        };
+      }
+    
+      function onWindowResize() {
+    
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            //We can change here when we want to make it responsive and in its own div
+            renderer.setSize( window.innerWidth, window.innerHeight);
+    
+            render();
+        }
+    
+    
+      controls.addEventListener('change', window.requestRenderIfNotRequested);
+      window.addEventListener( 'resize', resizeRendererToDisplaySize(renderer) );
+      onWindowResize()
+    
+      }
+      </script>
+    
+    

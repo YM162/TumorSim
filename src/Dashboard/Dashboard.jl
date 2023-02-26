@@ -4,7 +4,6 @@ module Dashboard
     using DrWatson
 
     using FilePathsBase
-    using Stipple, StipplePlotly, StippleUI, Genie, GenieFramework
     using DataFrames
     using Statistics
     using BSON
@@ -18,18 +17,7 @@ module Dashboard
     using TumorSim
     function launch_dashboard()
 
-        include(srcdir("Dashboard", "view.jl"))
-        include(srcdir("Dashboard", "launch.jl"))
-
-        route("/") do
-            Genie.Renderer.redirect("/view")
-        end
-
-        up(TumorSim.Config["Dashboard"]["port"],TumorSim.Config["Dashboard"]["ip"])
     end
 
-    function kill_dashboard()
-        Genie.down!()
-    end
 end
 using .Dashboard
