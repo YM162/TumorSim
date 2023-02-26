@@ -30,7 +30,7 @@ function get_abmobs(;fitness=Dict([0,0,0]=>0.027, [1,0,0]=>0.031,[0,1,0]=>0.035,
     return abmobs
 end
 abmobs = get_abmobs()
-resetargs = Any[0.2, 0.01, 0.01, 485542213, Any[100, 100, 100], 10, "center", "false", 3000, 1, 0.5, 0.75, "1", 0.2]
+resetargs = Any[0.2, 0.01, 0.01, 485542213, Any[100, 100, 100], 100, "center", "false", 3000, 1, 0.5, 0.75, "4", 0.2]
 handle(w, "changepage") do args
     
     global singlesetup
@@ -38,19 +38,22 @@ handle(w, "changepage") do args
     
     @js_ w document.write($(String(read(srcdir("Dashboard/dashhtml/"*args*".html")))))
     
+    sleep(0.5)
     load!(w,srcdir("Dashboard/dashhtml/assets/css/style.css"))
     if args == "singlesimulation"
-
-
+        
         println("Setting up single simulation")
         @js_ w document.write($(String(read(srcdir("Dashboard/dashhtml/singlethree.html"))))) #Double sending magic makes it work.
 
         @js_ w document.write($(String(read(srcdir("Dashboard/dashhtml/singlethree.html")))))
         sleep(0.5)
+        @js_ w generate_plot1()
+        
         @js_ w window.initvox()
         sleep(0.5)
         global abmobs = get_abmobs()
         step_and_plot(abmobs,0)
+        
     end
     
 end
