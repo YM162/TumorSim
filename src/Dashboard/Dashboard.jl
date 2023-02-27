@@ -1,4 +1,3 @@
-#Todo esto hay que meterlo en un submodulo como en todos los demás.
 module Dashboard
     export launch_dashboard
 
@@ -8,11 +7,17 @@ module Dashboard
     using Agents
     using TumorSim
     using DataFrames
-    
+    mutable struct DashboardStruct
+        w::Window
+        single_abmobs::Any
+        single_oldpositions::Vector
+        single_resetargs::Vector
+    end
+
     function get_abmobs(;fitness=Dict([0,0,0]=>0.027, [1,0,0]=>0.031,[0,1,0]=>0.035,[1,1,0]=>0.040,[1,1,1]=>0.040),
         scenario = create_scenario((100,100,100),100,"center",false),
         treatment = create_treatment(3000, 1, 0.5, 3, 0.75),
-        cost_of_resistance=0.1,
+        cost_of_resistance=0.2,
         death_rate=0.1,
         mutation_rate=0.01,
         migration_rate=0.01,
@@ -33,18 +38,17 @@ module Dashboard
     end
 
     function updategraph(model)
-        global oldpositions
         genotype_bits = [x for x in sort!([x for x in keys(model.fitness)],by=x -> TumorSim.Fitness.bit_2_int(BitArray(x)))]
         order = Dict(zip(genotype_bits,1:length(genotype_bits)))
         
         positions = [[[a for a in x.pos],TumorSim.bit_2_int(x.genotype)+1] for x in collect(allagents(model))]
     
-        changes=vcat(setdiff(positions,oldpositions),[[x,0] for x in [x[1] for x in oldpositions] if x ∉ [x[1] for x in positions]])
+        changes=vcat(setdiff(positions,TumorSim_Dashboard.single_oldpositions),[[x,0] for x in [x[1] for x in TumorSim_Dashboard.single_oldpositions] if x ∉ [x[1] for x in positions]])
     
-        @js_ w window.world.setVoxelArray($(changes));
-        global oldpositions = positions
-        @js_ w window.updateVoxelGeometry(1,1,1)
-        @js_ w window.requestRenderIfNotRequested()
+        @js_ TumorSim_Dashboard.w window.world.setVoxelArray($(changes));
+        TumorSim_Dashboard.single_oldpositions = positions
+        @js_ TumorSim_Dashboard.w window.updateVoxelGeometry(1,1,1)
+        @js_ TumorSim_Dashboard.w window.requestRenderIfNotRequested()
     
         return nothing
     end
@@ -93,82 +97,81 @@ module Dashboard
     end
     
     function clearvox()
-        global oldpositions
-        changes = [[x,0] for x in [x[1] for x in oldpositions]]
-        @js_ w window.world.setVoxelArray($(changes));
-        @js_ w window.updateVoxelGeometry(1,1,1)
-        @js_ w window.requestRenderIfNotRequested()
-        oldpositions = [[[1,1,1],0]]
+        changes = [[x,0] for x in [x[1] for x in TumorSim_Dashboard.single_oldpositions]]
+        @js_ TumorSim_Dashboard.w window.world.setVoxelArray($(changes));
+        @js_ TumorSim_Dashboard.w window.updateVoxelGeometry(1,1,1)
+        @js_ TumorSim_Dashboard.w window.requestRenderIfNotRequested()
+        TumorSim_Dashboard.single_oldpositions = [[[1,1,1],0]]
     end
 
     function launch_dashboard(test=false)
-        global w = Window(Dict("minWidth"=> 800,"minHeight"=> 450,"width"=> 1250,"height"=> 675))
+        w = Window(Dict("minWidth"=> 800,"minHeight"=> 450,"width"=> 1250,"height"=> 675))
 
-        @js_ w document.open()
-        @js_ w document.write($(String(read(srcdir("Dashboard/dashhtml/index.html")))))
-        load!(w,srcdir("Dashboard/dashhtml/assets/css/style.css"))
-        @js_ w document.write($(String(read(srcdir("Dashboard/dashhtml/singlethree.html")))))
+        global TumorSim_Dashboard = DashboardStruct(w,
+                                            get_abmobs(),
+                                            [[[1,1,1],0]],
+                                            [0.2, 0.01, 0.01, 485542213, Any[100, 100, 100], 100, "center", "false", 3000, 1, 0.5, 0.75, "4", 0.2])
+
+
+        @js_ TumorSim_Dashboard.w document.open()
+        @js_ TumorSim_Dashboard.w document.write($(String(read(srcdir("Dashboard/dashhtml/index.html")))))
+        load!(TumorSim_Dashboard.w,srcdir("Dashboard/dashhtml/assets/css/style.css"))
+        @js_ TumorSim_Dashboard.w document.write($(String(read(srcdir("Dashboard/dashhtml/singlethree.html")))))
         
-        global abmobs = get_abmobs()
-        global resetargs = Any[0.2, 0.01, 0.01, 485542213, Any[100, 100, 100], 100, "center", "false", 3000, 1, 0.5, 0.75, "4", 0.2]
-        global oldpositions = [[[1,1,1],0]] #Placeholder for first iteration
 
-        handle(w, "changepage") do args
+        handle(TumorSim_Dashboard.w, "changepage") do args
             
-            @js_ w document.open()
-            
-            @js_ w document.write($(String(read(srcdir("Dashboard/dashhtml/"*args*".html")))))
-            
-            load!(w,srcdir("Dashboard/dashhtml/assets/css/style.css"))
+            @js_ TumorSim_Dashboard.w document.open()
+            @js_ TumorSim_Dashboard.w document.write($(String(read(srcdir("Dashboard/dashhtml/"*args*".html")))))
+            load!(TumorSim_Dashboard.w,srcdir("Dashboard/dashhtml/assets/css/style.css"))
+
             if args == "singlesimulation"
-                global abmobs = get_abmobs()
+                TumorSim_Dashboard.single_abmobs = get_abmobs()
                 clearvox()
                 println("Setting up single simulation")
-                @js_ w document.write($(String(read(srcdir("Dashboard/dashhtml/singlethree.html"))))) #Double sending magic makes it work.
+                @js_ TumorSim_Dashboard.w document.write($(String(read(srcdir("Dashboard/dashhtml/singlethree.html"))))) #Double sending magic makes it work.
         
-                @js_ w document.write($(String(read(srcdir("Dashboard/dashhtml/singlethree.html")))))
+                @js_ TumorSim_Dashboard.w document.write($(String(read(srcdir("Dashboard/dashhtml/singlethree.html")))))
                 sleep(0.5)
-                js(w,Blink.JSString("""generate_plot1($(abmobs.model[].ngenes),$(abmobs.model[].treatment.detecting_size),$(Int(floor(abmobs.model[].treatment.detecting_size*abmobs.model[].treatment.starting_size))),$(Int(floor(abmobs.model[].treatment.detecting_size*abmobs.model[].treatment.starting_size*abmobs.model[].treatment.pausing_size))))"""),callback=false)
+                js(TumorSim_Dashboard.w,Blink.JSString("""generate_plot1($(TumorSim_Dashboard.single_abmobs.model[].ngenes),$(TumorSim_Dashboard.single_abmobs.model[].treatment.detecting_size),$(Int(floor(TumorSim_Dashboard.single_abmobs.model[].treatment.detecting_size*TumorSim_Dashboard.single_abmobs.model[].treatment.starting_size))),$(Int(floor(TumorSim_Dashboard.single_abmobs.model[].treatment.detecting_size*TumorSim_Dashboard.single_abmobs.model[].treatment.starting_size*TumorSim_Dashboard.single_abmobs.model[].treatment.pausing_size))))"""),callback=false)
                 
-                @js_ w window.initvox()
+                @js_ TumorSim_Dashboard.w window.initvox()
                 sleep(0.5)
                 
-                step_and_plot(abmobs,0)
+                step_and_plot(TumorSim_Dashboard.single_abmobs,0)
                 
             end
             
         end
    
         handle(w, "create_single") do args
-            global abmobs
             @show args
-            abmobs = create_single(args)
+            TumorSim_Dashboard.single_abmobs = create_single(args)
             clearvox()
-            global resetargs = copy(args)
-            step_and_plot(abmobs,0)
-            js(w,Blink.JSString("""generate_plot1($(abmobs.model[].ngenes),$(abmobs.model[].treatment.detecting_size),$(Int(floor(abmobs.model[].treatment.detecting_size*abmobs.model[].treatment.starting_size))),$(Int(floor(abmobs.model[].treatment.detecting_size*abmobs.model[].treatment.starting_size*abmobs.model[].treatment.pausing_size))))"""),callback=false)
+            TumorSim_Dashboard.single_resetargs = copy(args)
+            step_and_plot(TumorSim_Dashboard.single_abmobs,0)
+            js(TumorSim_Dashboard.w,Blink.JSString("""generate_plot1($(TumorSim_Dashboard.single_abmobs.model[].ngenes),$(TumorSim_Dashboard.single_abmobs.model[].treatment.detecting_size),$(Int(floor(TumorSim_Dashboard.single_abmobs.model[].treatment.detecting_size*TumorSim_Dashboard.single_abmobs.model[].treatment.starting_size))),$(Int(floor(TumorSim_Dashboard.single_abmobs.model[].treatment.detecting_size*TumorSim_Dashboard.single_abmobs.model[].treatment.starting_size*TumorSim_Dashboard.single_abmobs.model[].treatment.pausing_size))))"""),callback=false)
         end
         
         handle(w, "resetabmobs") do args
-            global resetargs
-            global abmobs = create_single(resetargs)
+            TumorSim_Dashboard.single_abmobs = create_single(TumorSim_Dashboard.single_resetargs)
             clearvox()
-            step_and_plot(abmobs,0)
-            js(w,Blink.JSString("""generate_plot1($(abmobs.model[].ngenes),$(abmobs.model[].treatment.detecting_size),$(Int(floor(abmobs.model[].treatment.detecting_size*abmobs.model[].treatment.starting_size))),$(Int(floor(abmobs.model[].treatment.detecting_size*abmobs.model[].treatment.starting_size*abmobs.model[].treatment.pausing_size))))"""),callback=false)
+            step_and_plot(TumorSim_Dashboard.single_abmobs,0)
+            js(TumorSim_Dashboard.w,Blink.JSString("""generate_plot1($(TumorSim_Dashboard.single_abmobs.model[].ngenes),$(TumorSim_Dashboard.single_abmobs.model[].treatment.detecting_size),$(Int(floor(TumorSim_Dashboard.single_abmobs.model[].treatment.detecting_size*TumorSim_Dashboard.single_abmobs.model[].treatment.starting_size))),$(Int(floor(TumorSim_Dashboard.single_abmobs.model[].treatment.detecting_size*TumorSim_Dashboard.single_abmobs.model[].treatment.starting_size*TumorSim_Dashboard.single_abmobs.model[].treatment.pausing_size))))"""),callback=false)
         end
         
         handle(w, "nrun") do args
-            step_and_plot(abmobs,1)
+            step_and_plot(TumorSim_Dashboard.single_abmobs,1)
             
-            adata = abmobs.adf[]
-            genotypes = [replace(string(x)," "=>"") for x in sort!([x for x in keys(abmobs.model[].fitness)],by=x -> TumorSim.bit_2_int(BitArray(x)))]
+            adata = TumorSim_Dashboard.single_abmobs.adf[]
+            genotypes = [replace(string(x)," "=>"") for x in sort!([x for x in keys(TumorSim_Dashboard.single_abmobs.model[].fitness)],by=x -> TumorSim.bit_2_int(BitArray(x)))]
             lastdata = [adata[end,i] for i in 1:ncol(adata)]
             for gen in 1:(length(lastdata)-1)
                 id = TumorSim.bit_2_int(BitArray(eval(Meta.parse(genotypes[gen]))))
                 number = lastdata[gen+1]
-                js(w,Blink.JSString("""Plotly.extendTraces("plot1",{y:[[$number]]},[$id])"""),callback=false)
+                js(TumorSim_Dashboard.w,Blink.JSString("""Plotly.extendTraces("plot1",{y:[[$number]]},[$id])"""),callback=false)
             end
-            js(w,Blink.JSString("""window.inprocess=false"""),callback=false)
+            js(TumorSim_Dashboard.w,Blink.JSString("""window.inprocess=false"""),callback=false)
         end
         
     end
