@@ -30,7 +30,7 @@
         }
 
     </style>
-    <script src="https://cdn.plot.ly/plotly-2.18.0.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 
 <body>
@@ -92,18 +92,18 @@
                                 <i class="fa fa-bell"></i>
                             </button>
                             <div class="dropdown-menu" aria-labelledby="notification">
-                                <p class="red">You have 3 Notification</p>
+                                <p class="red">You have 3 Notifications</p>
                                 <a class="dropdown-item media" href="#">
                                     <i class="fa fa-check"></i>
-                                    <p>Server #1 overloaded.</p>
+                                    <p>Notification 1</p>
                                 </a>
                                 <a class="dropdown-item media" href="#">
                                     <i class="fa fa-info"></i>
-                                    <p>Server #2 overloaded.</p>
+                                    <p>Notification 2</p>
                                 </a>
                                 <a class="dropdown-item media" href="#">
                                     <i class="fa fa-warning"></i>
-                                    <p>Server #3 overloaded.</p>
+                                    <p>Notification 3</p>
                                 </a>
                             </div>
                         </div>
@@ -114,16 +114,13 @@
                             </button>
                             <div class="dropdown-menu" aria-labelledby="settings">
                                 <a class="dropdown-item media" href="#">
-                                    <i class="fa fa-check"></i>
-                                    <p>Server #1 overloaded.</p>
+                                    <p>TumorSim Settings</p>
                                 </a>
                                 <a class="dropdown-item media" href="#">
-                                    <i class="fa fa-info"></i>
-                                    <p>Server #2 overloaded.</p>
+                                    <p>App Settings</p>
                                 </a>
                                 <a class="dropdown-item media" href="#">
-                                    <i class="fa fa-warning"></i>
-                                    <p>Server #3 overloaded.</p>
+                                    <p>Credits and References</p>
                                 </a>
                             </div>
                         </div>
@@ -202,8 +199,8 @@
                                 <div class="tab-pane fade" id="pills-scenario" role="tabpanel" aria-labelledby="pills-scenario-tab">
                                     <h3>Scenario</h3>
                                     <div class="row form-group">
-                                        <div class="col-3"><p><u>Size</u></p><input type="text" value="100x100x100" class="form-control" id="size"><div class="alert alert-danger" role = "alert" id="size_error" style="display:none;">Please specify a correct size (Ej.: 100x100x100)</div></div>
-                                        <div class="col-3"><p><u>Initial cells</u></p><input type="number" step = "1" min="0" max="1" value="10" class="form-control" id="initial_cells"><div class="alert alert-danger" role = "alert" id="initial_cells_error" style="display:none;">Initial cells must be a positive number > 0.</div></div>
+                                        <div class="col-3"><p><u>Size</u></p><input type="text" value="100x100x100" class="form-control" id="size"><div class="alert alert-danger" role = "alert" id="size_error" style="display:none;">Please specify a correct size (Ej.: 100x100x100). Max size is 100 in each axis.</div></div>
+                                        <div class="col-3"><p><u>Initial cells</u></p><input type="number" step = "1" min="0" max="1" value="100" class="form-control" id="initial_cells"><div class="alert alert-danger" role = "alert" id="initial_cells_error" style="display:none;">Initial cells must be a positive number > 0.</div></div>
                                         <div class="col-3"><p><u>Initial positions</u></p>
                                             <select name="initial_positions" id="initial_positions" class="form-control">
                                             <option value="center">Center</option>
@@ -285,6 +282,7 @@
     <!--Local Stuff-->
     <script>
         window.singlerunning = false;
+        window.inprocess = false;
         async function start_stop(){
             if (document.getElementById("start_stop").innerHTML == "Start"){
                 document.getElementById("start_stop").innerHTML = "Stop";
@@ -292,8 +290,13 @@
                 document.getElementById("start_stop").classList.add("btn-danger");
                 window.singlerunning = true;
                 while (window.singlerunning){
+                    if (window.inprocess){
+                        await new Promise(r => setTimeout(r, 10));
+                        continue
+                    }
+                    window.inprocess = true
                     Blink.msg("nrun",1);
-                    await new Promise(r => setTimeout(r, 100));
+                    //await new Promise(r => setTimeout(r, 100));
                 }
             }else{
                 window.singlerunning = false;
@@ -359,7 +362,7 @@
             }else{
                 sizeerror = false;
                 for (i in size){
-                    if (isNaN(parseInt(size[i]))){
+                    if (isNaN(parseInt(size[i])) || parseInt(size[i]) > 100){
                         document.getElementById("size").classList.add("is-invalid");
                         document.getElementById("size_error").style.display = "block";
                         errored = true;
@@ -452,28 +455,128 @@
             
 
         }
+        var pic = new Image(); 
+        console.log("e")
+        var canvaspic = document.createElement("canvas");
+        pic.crossOrigin = "Anonymous";
+        pic.onload = function() { 
+            canvaspic.width = pic.width;
+            canvaspic.height = pic.height;
+            var ctx = canvaspic.getContext("2d");
 
-        function generate_plot1(){
-            var trace1 = {
-                x: [],
-                y: [],
+            ctx.drawImage(pic, 0, 0);
+
+            var c = canvaspic.getContext('2d');
+            window.cimageccolors = c;
+            var p = c.getImageData(0, 0, 159, 1).data;
+            colors=[]
+            for (let i = 0; i < p.length; i += 4) {
+                colors.push(p.slice(i, i + 3))
+                }
+            window.imagecolors = colors;
+         };
+         
+        pic.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJ8AAAAJCAYAAAAsJP6+AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAKGSURBVFhH7dLtT8wBAMDx70mn0+5aU6fS3VW6jRQqOm3VcEORa9ELlohOhCmjsppqIseoMy5baKlpzS5Pl57G4ao3uTXJaK1TeYhRmJZ5SvwX9+b3+Qu+L76icf/g6eWmBTh8bKwstvJIk4po/mOq/AqRnFvFtt1q+kabkKwQU9U/QcKv3zC5ntCjR2mck0buoI6GY4tQJJ/EI3qc9upq7lda6e5RYZr4TNwvLTvaojFVhfF98i6f1GEMHA4gssLKCt0q+seGSM/UMCJVsvhtCfXGP4Qc3EqeepC0NTeoO5fCl/BJQv0fkidqJaPxCrfc1hHScADNUBmaSi2lEh9c2jeTWlzIJomWEEctiZ4O6iy+nIi+yS7pcmpzrXwZP0NQ5CHk7gaut3Wz0exF0qU/XLY68JQOoKh2pVARR84PM4k3AigydqJVR1Bv/Uhry3liF9pJkXbS3hlMrr0ZpbyMsz9X07/sHt4eYlo6HxJoWUCvzMCGMzGE+WURoWvnwawYKgMP8/rqX8Z6Z2J9p0B5YT1isRdSrZ5i6VMuDtpQZWWT8aYUdd0d0kfNpHdcQ5lTg7tyO1PybdTYYzBM7WOeUsXBr0XIN5WQ75bAkyM7kYuS0P+142lOJbb1f4v7CB02X/yfN+FuqUIrs/DetYe+HSMYPaJY1NVF0IVQzB6RzGneT8WAA+O8Cmb26Mlv2oLseAHiB93Ynw3zTR6OKKCc7UE/kOmmOW3cywujjbxTJvQhobxaWs6S0tss/G5HlTtM9ssEijfcom/2ada2BTPq5s2HZB0GlygK9sRheT6X+Mx4ZiAQOIkwn8BphPkETiPMJ3AaYT6B0wjzCZxGmE/gNMJ8AieBf3sF3SE8jJe/AAAAAElFTkSuQmCC'; //Last
+
+
+        function new_trace(tracedata){
+            return {
+                y: [0],
                 type: "scatter",
-                stackgroup: "1"
-                };
-                var trace2 = {
-                    x: [],
-                    y: [],
-                    type: "scatter",
-                    stackgroup: "1"
-                    };
-                var trace3 = {
-                    x: [],
-                    y: [],
-                    type: "scatter",
-                    stackgroup: "1"
-                    };
-                var data = [trace1, trace2, trace3];
-                Plotly.newPlot("plot1", data);
+                stackgroup: "1",
+                line: {
+                    color: `rgb(${tracedata[0][0]},${tracedata[0][1]},${tracedata[0][2]})`,
+                    width: 1
+                },
+                name: tracedata[1]
+            }
+        }
+        function generate_plot1(n_genes,detecting_size,starting_size,pausing_size){
+            console.log(n_genes,detecting_size,starting_size,pausing_size)
+            const zip = (a, b) => a.map((k, i) => [k, b[i]]); //https://stackoverflow.com/a/32937275
+            
+            ngenotypes = 2**n_genes
+            
+            genotypes = []
+            for (let i = 0; i < ngenotypes; i++) {
+                genotypes.push("["+i.toString(2).padStart(n_genes,0).split("").join(",")+"]")
+            }
+            
+            
+            colors = Array((Math.floor(ngenotypes/159)+1)).fill(window.imagecolors).flat().slice(0,ngenotypes);
+            traces = zip(colors,genotypes)
+            //Treatment
+            var layout = {
+                shapes: [
+                {
+                    type: 'line',
+                    xref: 'paper',
+                    x0: 0,
+                    y0: detecting_size,
+                    x1: 1,
+                    y1: detecting_size,
+                    line:{
+                        color: 'rgb(127, 127, 0)',
+                        width: 4,
+                        dash:'dot'
+                    }
+                },
+                {
+                    type: 'line',
+                    xref: 'paper',
+                    x0: 0,
+                    y0: starting_size,
+                    x1: 1,
+                    y1: starting_size,
+                    line:{
+                        color: 'rgb(255, 0, 0)',
+                        width: 4,
+                        dash:'dot'
+                    }
+                },
+                {  
+                    type: 'line',
+                    xref: 'paper',
+                    x0: 0,
+                    y0: pausing_size,
+                    x1: 1,
+                    y1: pausing_size,
+                    line:{
+                        color: 'rgb(0, 0, 255)',
+                        width: 4,
+                        dash:'dot'
+                    }
+                }
+                ]
+            }
+            window.plot1edit = false
+            var config = {responsive: true,
+                modeBarButtonsToRemove: ['toImage', 'sendDataToCloud','zoom2d','pan2d','select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines'],
+                modeBarButtonsToAdd: [{
+                    name: 'Save plot as .svg',
+                    icon: Plotly.Icons.camera,
+                    click: function(gd) {
+                    Plotly.downloadImage(gd, {format: 'svg'})
+                    }
+                },{
+                    name: 'Toggle chart edit mode',
+                    icon: Plotly.Icons.pencil,
+                    click: function(gd) {
+                        if (window.plot1edit){
+                            Plotly.plot(gd, [],{},{editable: false})
+                            window.plot1edit = false
+                        }else{
+                            Plotly.plot(gd, [],{},{editable: true})
+                            window.plot1edit = true
+                        }
+                    }
+                }
+            ],
+                editable: false,
+                displaylogo: false
+            }
+            Plotly.newPlot("plot1", traces.map(new_trace),layout,config)
+
         }
     </script>
     

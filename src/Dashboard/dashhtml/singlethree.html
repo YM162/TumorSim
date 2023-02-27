@@ -10,7 +10,7 @@
 
 <script type="module">
     // Three.js - Voxel Geometry - UI
-    // from https://threejs.org/manual/examples/voxel-geometry-culled-faces-ui.html
+    // Modified from https://threejs.org/manual/examples/voxel-geometry-culled-faces-ui.html
     
     import * as THREE from "https://threejs.org/build/three.module.js";
     import {OrbitControls} from 'https://threejs.org/examples/jsm/controls/OrbitControls.js';
@@ -77,8 +77,6 @@
     
     
       }
-    
-    
     
       getVoxel(x, y, z) {
         const cell = this.getCellForVoxel(x, y, z);
@@ -231,7 +229,7 @@
       const tileTextureWidth = 159;
       const tileTextureHeight = 9;
       const loader = new THREE.TextureLoader();
-      const texture = loader.load('https://i.ibb.co/NZyHwVY/Every-pixel-has-a-random-color.png', render);
+      const texture = loader.load('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJ8AAAAJCAYAAAAsJP6+AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAKGSURBVFhH7dLtT8wBAMDx70mn0+5aU6fS3VW6jRQqOm3VcEORa9ELlohOhCmjsppqIseoMy5baKlpzS5Pl57G4ao3uTXJaK1TeYhRmJZ5SvwX9+b3+Qu+L76icf/g6eWmBTh8bKwstvJIk4po/mOq/AqRnFvFtt1q+kabkKwQU9U/QcKv3zC5ntCjR2mck0buoI6GY4tQJJ/EI3qc9upq7lda6e5RYZr4TNwvLTvaojFVhfF98i6f1GEMHA4gssLKCt0q+seGSM/UMCJVsvhtCfXGP4Qc3EqeepC0NTeoO5fCl/BJQv0fkidqJaPxCrfc1hHScADNUBmaSi2lEh9c2jeTWlzIJomWEEctiZ4O6iy+nIi+yS7pcmpzrXwZP0NQ5CHk7gaut3Wz0exF0qU/XLY68JQOoKh2pVARR84PM4k3AigydqJVR1Bv/Uhry3liF9pJkXbS3hlMrr0ZpbyMsz9X07/sHt4eYlo6HxJoWUCvzMCGMzGE+WURoWvnwawYKgMP8/rqX8Z6Z2J9p0B5YT1isRdSrZ5i6VMuDtpQZWWT8aYUdd0d0kfNpHdcQ5lTg7tyO1PybdTYYzBM7WOeUsXBr0XIN5WQ75bAkyM7kYuS0P+142lOJbb1f4v7CB02X/yfN+FuqUIrs/DetYe+HSMYPaJY1NVF0IVQzB6RzGneT8WAA+O8Cmb26Mlv2oLseAHiB93Ynw3zTR6OKKCc7UE/kOmmOW3cywujjbxTJvQhobxaWs6S0tss/G5HlTtM9ssEijfcom/2ada2BTPq5s2HZB0GlygK9sRheT6X+Mx4ZiAQOIkwn8BphPkETiPMJ3AaYT6B0wjzCZxGmE/gNMJ8AieBf3sF3SE8jJe/AAAAAElFTkSuQmCC', render);
       texture.magFilter = THREE.NearestFilter;
       texture.minFilter = THREE.NearestFilter;
     
