@@ -1,61 +1,51 @@
+module Simulate
+    export simulate
 
-using StatsBase
+    using DataFrames
+    using DrWatson
+    using Agents, Random
+    using Agents.DataFrames, Agents.Graphs
+    using StatsBase
 
-function launch_interactive_simulation(d::Dict) #Broken ATM until i figure out the GLMakie problems.
-    @unpack seed, pr, dr, mr, fitness, scenario, treatment = d
+    using TumorSim.Fitness
+    using TumorSim.TumorModel
+    using TumorSim.Analysis
 
-    model = model_init(pr=0.027, dr=0.015, mr=0.01, scenario=scenario, fitness=fitness,treatment=treatment, seed=0)
+    function simulate(d::Dict,max_steps::Int)
+        @unpack seed, death_rate, mutation_rate, fitness, cost_of_resistance, scenario, treatment, migration_rate = d
+        
+        fulld::Dict = copy(d)
+        agent_collect::Array = [(:genotype, f) for f in genotype_fraction_function_generator(fitness)]
+        model = model_init(death_rate=death_rate, mutation_rate=mutation_rate, scenario=scenario, fitness=fitness,treatment=treatment,cost_of_resistance = cost_of_resistance,migration_rate=migration_rate, seed=seed)
+        #We stop (not a typo, stop != step) early if a size of max or 0 is reached
+        step = create_stop_function(max_steps,Int(floor(treatment.detecting_size*1.5)))
 
-    #We plot the genotype of each cell with a different color.
-    genotypes = [replace(string(x)," "=>"") for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
-    genotype_bits = [x for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
-    order = Dict(zip(genotype_bits,1:length(genotype_bits)))
+        adata::DataFrame, _ = run!(model, agent_step!, model_step!, step; adata = agent_collect)
+        
+        phylogeny = countmap([x.phylogeny for x in allagents(model)])
+        fulld["Phylogeny"] = phylogeny
+        
+        genotypes = [replace(string(x)," "=>"") for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
+        pushfirst!(genotypes,"step")
+        rename!(adata,genotypes)
+        fulld["Genotypes"] = adata
 
-    #Functions to get a different color for each genotype
-    genotypecolor(a) = get(colorschemes[:hsv], order[a.genotype], (1,length(genotypes)+1))
-    genotypecolor_legend(a) = get(colorschemes[:hsv], a, (1,length(genotypes)+1))
+        fulld["TTP"] = get_TTP(adata,Int(floor(treatment.detecting_size*1.2)))
+        fulld["Diversity"] = get_diversity(adata)
+        fulld["Resistant_on_detection"] = get_resistant_fraction_on_detection(adata,treatment.detecting_size,treatment.resistance_gene)
 
-    #We make a dynamic plot
-    figure, _ = abmplot(model;agent_step! = agent_step!,model_step! = model_step!,ac = genotypecolor,as=0.5)
+        fulld["s_dim"] = Int(scenario.x!=1) + Int(scenario.y!=1) + Int(scenario.z!=1)
+        
+        fulld["s_size"] = string((scenario.x,scenario.y,scenario.z))
+        fulld["s_initial_cells"] = length(scenario.cell_pos)
 
-    #We create a legend for the genotypes
-    Legend(figure[1, 2],
-        [MarkerElement(color = genotypecolor_legend(a), marker = '■', markersize = 15, strokecolor = :black) for a in 1:length(genotypes)],
-        genotypes, patchsize = (20, 20), rowgap = 1)
+        fulld["t_detecting_size"] = treatment.detecting_size
+        fulld["t_starting_size"] = treatment.starting_size
+        fulld["t_pausing_size"] = treatment.pausing_size
+        fulld["t_resistance_gene"] = treatment.resistance_gene
+        fulld["t_kill_rate"] = treatment.kill_rate
 
-    #We display the figure
-    display(figure)
+        return fulld
+    end
 end
-
-function simulate(d::Dict,steps)
-    @unpack seed, pr, dr, mr, fitness, scenario, treatment = d
-    
-    fulld = copy(d)
-    agent_collect = [(:genotype, f) for f in genotype_fraction_function_generator(fitness)]
-    model = model_init(pr=pr, dr=dr, mr=mr, scenario=scenario, fitness=fitness,treatment=treatment, seed=seed)
-    #We stop (not a typo, stop != step) early if a size of max or 0 is reached
-    step = create_stop_function(steps,treatment.detecting_size*1.5)
-
-    adata, _ = run!(model, agent_step!, model_step!, step; adata = agent_collect)
-    
-    phylogeny = countmap([x.phylogeny for x in allagents(model)])
-    fulld["Phylogeny"] = phylogeny
-
-    fulld["TTP"] = get_TTP(adata,treatment.detecting_size*1.2)
-    fulld["Diversity"] = get_diversity(adata)
-
-    genotypes = [replace(string(x)," "=>"") for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
-    pushfirst!(genotypes,"step")
-    rename!(adata,genotypes)
-    fulld["Genotypes"]=adata
-
-    push!(fulld,"s_dims"=>string((scenario.x,scenario.y,scenario.z)))
-    push!(fulld,"s_initial_cells"=>length(scenario.cell_pos))
-
-    push!(fulld,"t_detecting_size"=>treatment.detecting_size)
-    push!(fulld,"t_starting_size"=>treatment.starting_size)
-    push!(fulld,"t_pausing_size"=>treatment.pausing_size)
-    push!(fulld,"t_resistance_size"=>treatment.resistance_gene)
-    push!(fulld,"t_kill_rate"=>treatment.kill_rate)
-    return fulld
-end
+using .Simulate
