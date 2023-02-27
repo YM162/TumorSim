@@ -88,11 +88,11 @@ parameter_combinations = dict_list(parameters)
 #We specify the number of steps each simulation will go through. The simulation will stop early if all cells die or if we reach 1.5 * treatment.detection_size (resistance was aquired).
 steps=1000
 
-#Get a dataframe with the results of the simulation.
-result_df = simulate(parameter_combinations[1],steps)
+#Get a dictionary with the results of the simulation.
+result = simulate(parameter_combinations[1],steps)
 
 #We save it to disk using DrWatson's safesave and savename functions.
-safesave(datadir("simulations", savename(parameter_combinations[1], "jld2")),result_df)
+safesave(datadir("simulations", savename(result, "jld2")),result)
 
 ```
 <b>9b.- Run all the simulations at once using parallelization.</b>
@@ -104,7 +104,7 @@ results = @showprogress pmap(simulate,parameter_combinations,fill(steps,length(p
 
 #We again use DrWatson's safesave and savename functions to save each simulation to disk.
 for (i, d) in enumerate(parameter_combinations)
-    safesave(datadir("simulations", savename(d, "jld2")), results[i])
+    safesave(datadir("simulations", savename(results[i], "jld2")), results[i])
 end
 ```
 <b>10.- Collect the data from all the simulations you saved.</b>

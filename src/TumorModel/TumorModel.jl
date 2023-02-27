@@ -161,6 +161,7 @@ module TumorModel
         npos = nearby_positions(agent,model,1)
         empty_pos = [pos for pos in npos if isempty(pos,model)]
         if empty_pos!=[] && rand(model.rng) < model.fitness[agent.genotype]
+            #Mandar esto a dentro de treat y postergarlo el maximo posible. Generar numeros aleatorios suele ser caro
             if rand(model.rng) < model.treatment.kill_rate
                 if treat!(agent,model)
                     return true
