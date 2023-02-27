@@ -12,7 +12,6 @@ using InteractiveDynamics
 using StatsBase
 
 #Mirar con el OhMyREPL el 
-using ColorSchemes
 using DataStructures
 using DataFrames
 
