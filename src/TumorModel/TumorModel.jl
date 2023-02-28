@@ -52,7 +52,7 @@ module TumorModel
 
         rng = MersenneTwister(seed)
 
-        space = GridSpaceSingle((x, y, z),periodic=false) 
+        space = GridSpace((x, y, z),periodic=false,metric=:euclidean) 
         
         properties=@dict(death_rate,mutation_rate,fitness,treatment,scenario,current_size,ngenes,migration_rate)
 
