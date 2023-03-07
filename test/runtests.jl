@@ -17,13 +17,6 @@ println("Starting tests")
 ti = time()
 
 @testset "Fitness tests" begin
-    #genotype_fraction_function_generator tests
-    fitness=Dict([0,0,0]=>0.027, [1,0,0]=>0.035)
-    functions = TumorSim.genotype_fraction_function_generator(fitness)
-    @test length(functions) == 2
-    @test functions[1]([BitArray([0,0,0]),BitArray([1,0,0]),BitArray([0,0,0])]) == 2
-    @test functions[2]([BitArray([0,0,0]),BitArray([1,0,0]),BitArray([0,0,0])]) == 1
-
     #bit_2_int tests
     @test TumorSim.bit_2_int(BitArray([1,0,0,0,0])) == 16
     @test TumorSim.bit_2_int(BitArray([0,0,0,0,0])) == 0
@@ -86,7 +79,7 @@ end
     treatment = create_treatment(3000,0.65,0.5,3,0.75)
     scenario = create_scenario((10,10),5,"center",false)
     fitness=Dict([0,0,0]=>0.027, [1,0,0]=>0.035)
-    model = TumorSim.model_init(death_rate=0.55, mutation_rate=0.01, migration_rate = 0.05, scenario=scenario, fitness=fitness,treatment=treatment, cost_of_resistance = 0.2, seed=0)
+    model = TumorSim.model_init(interaction_rule=:contact,death_rate=0.55, mutation_rate=0.01, migration_rate = 0.05, scenario=scenario, fitness=fitness,treatment=treatment, seed=0)
     agent = collect(allagents(model))[1]
     @test nagents(model) == 5
     @test agent.time_alive == 0
@@ -94,7 +87,7 @@ end
     @test agent.phylogeny == []
     #3D
     scenario = create_scenario((10,10,10),5,"center",true)
-    model = TumorSim.model_init(death_rate=0.55, mutation_rate=0.01, migration_rate = 0.05, scenario=scenario, fitness=fitness,treatment=treatment, cost_of_resistance = 0.2, seed=0)
+    model = TumorSim.model_init(interaction_rule=:contact,death_rate=0.55, mutation_rate=0.01, migration_rate = 0.05, scenario=scenario, fitness=fitness,treatment=treatment, seed=0)
     agent = collect(allagents(model))[1]
     @test nagents(model) == 5
     @test agent.time_alive == 0
@@ -111,13 +104,13 @@ fitness=Dict([0,0,0]=>0.027,
             [1,1,1]=>0.032)
 
 params = Dict(
+    "interaction_rule"=>:contact,
     "death_rate" => [0.55,2],
     "mutation_rate" => 0.1,
     "scenario" => scenario, 
     "fitness" => fitness,
     "treatment" => treatment,
     "migration_rate" => 0.05,
-    "cost_of_resistance" => 0.2,
     "seed" => 0
 )
 
@@ -129,7 +122,7 @@ adata2 = results[2]["Genotypes"]
 
 @testset "Simulate tests" begin
     @test length(results) == 2
-    @test length(results[1]) == 21
+    @test length(results[1]) == 22
     @test length(eachcol(adata1)) == 6
     @test length(eachrow(adata1)) != 0
     @test length(eachrow(adata1)) > length(eachrow(adata2))

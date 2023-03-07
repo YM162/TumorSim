@@ -17,10 +17,11 @@ module TumorModel
             time_alive::Int  # Time the cell has been alive
             genotype::BitArray # Genotype of the cell
             phylogeny::Array{Int} # Phylogeny of the cell
+            inhibited_by::Array{BitArray} # List of cells inhibiting this cell
     end
 
     #We initialize the model according to some parameters.
-    function model_init(;seed::Int64,death_rate::Float64,mutation_rate::Float64,migration_rate::Float64,fitness::Dict{Vector{Int64},Float64},cost_of_resistance::Float64,scenario::ScenarioObject,treatment::TreatmentObject)
+    function model_init(;seed::Int64,death_rate::Float64,mutation_rate::Float64,migration_rate::Float64,fitness::Dict{Vector{Int64},Float64},scenario::ScenarioObject,treatment::TreatmentObject,interaction_rule::Symbol)
         #We need to do this to reuse the treatment in paramscan
         treatment = TreatmentObject(treatment.detecting_size,
                                 treatment.starting_size,
@@ -34,34 +35,28 @@ module TumorModel
         y = scenario.y
         z = scenario.z
         cell_pos = scenario.cell_pos
-        fitness = copy(fitness)
 
         current_size::Int=length(cell_pos)
 
         ngenes::Int=length(collect(keys(fitness))[1])
         
-        #Apply cost_of_resistance to fitness
-        for i in keys(fitness)
-            if i[treatment.resistance_gene]==1
-                fitness[i]=fitness[i]*(1-cost_of_resistance)
-            end
-        end
-
-        fitness = Dict(zip([BitArray(i) for i in keys(fitness)],[fitness[i] for i in keys(fitness)]))
-        fitness=DefaultDict(0,fitness)
+        fitness = copy(fitness)
+        fitness = DefaultDict(0,Dict(zip([BitArray(i) for i in keys(fitness)],[fitness[i] for i in keys(fitness)])))
 
         rng = MersenneTwister(seed)
 
         space = GridSpace((x, y, z),periodic=false,metric=:euclidean) 
         
-        properties=@dict(death_rate,mutation_rate,fitness,treatment,scenario,current_size,ngenes,migration_rate)
+        abs_death_rate = fitness[BitArray([false for x in 1:ngenes])]*death_rate
+
+        properties=@dict(death_rate,mutation_rate,fitness,treatment,scenario,current_size,ngenes,migration_rate,abs_death_rate,interaction_rule)
 
         scheduler = Schedulers.Randomly()
 
         model = ABM(Cell, space;properties, rng, scheduler) 
         #we create each cell
         for cell in cell_pos
-            add_agent!((cell[1],cell[2],cell[3]),model,0,BitArray([false for x in 1:ngenes]),[]) # With this one we use the scenario
+            add_agent!((cell[1],cell[2],cell[3]),model,0,BitArray([false for x in 1:ngenes]),[],[]) # With this one we use the scenario
         end
 
         return model
@@ -155,25 +150,38 @@ module TumorModel
     #With a probability (the kill rate of the treatment), the cell is subjected to a treatment check.
     #Returns true if the cell has died.
     function reproduce!(agent,model)
-        newgenom::BitArray = copy(agent.genotype)
-        newphylo::Array{Int64} = copy(agent.phylogeny)
-
-        npos = nearby_positions(agent,model,1)
-        empty_pos = [pos for pos in npos if isempty(pos,model)]
-        if empty_pos!=[] && rand(model.rng) < model.fitness[agent.genotype]
-            #Mandar esto a dentro de treat y postergarlo el maximo posible. Generar numeros aleatorios suele ser caro
-            if rand(model.rng) < model.treatment.kill_rate
-                if treat!(agent,model)
+        if rand(model.rng) < model.fitness[agent.genotype]
+            npos = nearby_positions(agent,model,1)
+            if model.interaction_rule==:contact
+                aviable_pos = [pos for pos in npos if isempty(pos,model)]
+            elseif model.interaction_rule==:hierarchical_voter
+                aviable_pos = [pos for pos in npos if isempty(pos,model) || model.fitness[collect(agents_in_position(pos,model))[1].genotype]<model.fitness[agent.genotype]]
+            end
+            
+            if aviable_pos!=[]
+                agent.inhibited_by = []
+                if rand(model.rng) < model.treatment.kill_rate
+                    if treat!(agent,model)
+                        return true
+                    end
+                end
+                newgenom::BitArray = copy(agent.genotype)
+                newphylo::Array{Int64} = copy(agent.phylogeny)
+                newpos = sample(model.rng,aviable_pos)
+                if model.interaction_rule==:hierarchical_voter
+                    if !isempty(newpos,model)
+                        kill_agent!(collect(agents_in_position(newpos,model))[1],model)
+                    end
+                end
+                newagent = add_agent!(newpos,model,0,newgenom,newphylo,[])
+                mutate!(newagent,model)
+                kill_non_viable!(newagent, model)
+                mutate!(agent,model)
+                if kill_non_viable!(agent, model)
                     return true
                 end
-            end
-            newpos = sample(model.rng,empty_pos)
-            newagent = add_agent!(newpos,model,0,newgenom,newphylo)
-            mutate!(newagent,model)
-            kill_non_viable!(newagent, model)
-            mutate!(agent,model)
-            if kill_non_viable!(agent, model)
-                return true
+            else
+                agent.inhibited_by = [collect(agents_in_position(pos,model))[1].genotype for pos in npos]
             end
         end
         return false
@@ -181,11 +189,13 @@ module TumorModel
 
     #Move every cell to a random nearby space
     function move!(agent, model)
-        npos = nearby_positions(agent,model,1)
-        empty_pos = [pos for pos in npos if isempty(pos,model)]
-        if empty_pos!=[] && rand(model.rng) < model.migration_rate
-            newpos = sample(model.rng,empty_pos)
-            move_agent!(agent,newpos,model)
+        if rand(model.rng) < model.migration_rate
+            npos = nearby_positions(agent,model,1)
+            empty_pos = [pos for pos in npos if isempty(pos,model)]
+            if empty_pos!=[]
+                newpos = sample(model.rng,empty_pos)
+                move_agent!(agent,newpos,model)
+            end
         end
     end
 
@@ -193,7 +203,7 @@ module TumorModel
     function die!(agent, model)
 
         #Base apoptosis rate (Turnover)
-        if rand(model.rng) < model.fitness[BitArray([false for x in 1:model.ngenes])]*model.death_rate
+        if rand(model.rng) < model.abs_death_rate
             kill_agent!(agent, model)
             return true
         end
