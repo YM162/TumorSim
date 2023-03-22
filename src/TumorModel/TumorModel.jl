@@ -49,7 +49,9 @@ module TumorModel
         
         abs_death_rate = fitness[BitArray([false for x in 1:ngenes])]*death_rate
 
-        properties=@dict(death_rate,mutation_rate,fitness,treatment,scenario,current_size,ngenes,migration_rate,abs_death_rate,interaction_rule)
+        status = copy(treatment.active)
+
+        properties=@dict(death_rate,mutation_rate,fitness,treatment,scenario,current_size,ngenes,migration_rate,abs_death_rate,interaction_rule,status)
 
         scheduler = Schedulers.Randomly()
 
@@ -105,6 +107,8 @@ module TumorModel
                 move_agent!(agent,pos,model)
             end
         end
+        #We record the status of the treatment for this step
+        model.status = copy(model.treatment.active)
     end
 
     #We stop if any of this conditions are met.

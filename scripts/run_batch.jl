@@ -13,34 +13,34 @@ using DataFrames
 using Dates
 
 #We test adaptive and continuous therapy
-fitness=Dict([0,0,0]=>0.027, 
-            [1,0,0]=>0.032,
-            [0,1,0]=>0.037,
-            [1,1,0]=>0.042,
-            [1,1,1]=>0.036)
 
-fitness = Dict([0,0,0]=>0.027, 
-                [1,0,0]=>0.032,
-                [0,1,0]=>0.037,
-                [0,0,1]=>0.023,
-                [1,1,0]=>0.042,
-                [0,1,1]=>0.033,
-                [1,0,1]=>0.028,
-                [1,1,1]=>0.036)
+restrictions= [[1,2,1],
+                [1,3,1],
+                [2,4,1],
+                [3,4,1]]
 
+restrictions= []
+ngenes = 3
+base_pr = 0.027
+#Base pr multiplicative, except for the last one, which is the resistant gene.
+mult_pr = [1.16,1.35]
+cost_of_resistance = 0.15
+
+fitness = build_fitness_table(restrictions,base_pr,mult_pr,cost_of_resistance,ngenes)
+println(fitness)
 
 adaptive_therapy = create_treatment(3000, 1, 0.5, 3, 0.75) 
 continuous_therapy = create_treatment(3000, 1, 0.0, 3, 0.75) 
 
 parameters = Dict(
     "death_rate" => [0.3],
-    "mutation_rate" => 0.01,
+    "mutation_rate" => 0.0033,
     "scenario" => [create_scenario((100,100),100,"center",false)], 
     "fitness" => fitness,
     "treatment" => [adaptive_therapy,continuous_therapy],
     "migration_rate" => [0.1],
     "interaction_rule" => [:contact],
-    "seed" => map(abs,rand(Int64,10))
+    "seed" => map(abs,rand(Int64,1))
 )
 
 parameter_combinations = dict_list(parameters)
@@ -70,11 +70,25 @@ using VegaLite
 
 #stack(df[!,"Resistant_inhibited_by"][n],names(df[!,"Resistant_inhibited_by"][n])[2:end]) |> @vlplot(:area, x=:step, y={:value, stack=:normalize}, color="variable:n")
 
-new_inhibited = DataFrame()
-fr = min(length(df[!,"Resistant_inhibited_by"][n][!,"step"]),length(df[!,"Resistant_inhibited_by"][n-1][!,"step"]))
-for i in names(df[!,"Resistant_inhibited_by"][n])[2:end]
-    resta = df[!,"Resistant_inhibited_by"][n-1][!,i][1:fr]-df[!,"Resistant_inhibited_by"][n][!,i][1:fr]
-    insertcols!(new_inhibited,length(names(new_inhibited))+1,i => resta)
-end
-insertcols!(new_inhibited,1,"step" => df[!,"Resistant_inhibited_by"][n][1:fr,"step"])
+#df[!,"Divergence"][n] |> @vlplot(:line, x=:step, y=:jenshen_shannon, color=:variable)
+
+
+
+
+
+
+
+
+
+
+
+
+
+#new_inhibited = DataFrame()
+#fr = min(length(df[!,"Resistant_inhibited_by"][n][!,"step"]),length(df[!,"Resistant_inhibited_by"][n-1][!,"step"]))
+#for i in names(df[!,"Resistant_inhibited_by"][n])[2:end]
+#    resta = df[!,"Resistant_inhibited_by"][n-1][!,i][1:fr]-df[!,"Resistant_inhibited_by"][n][!,i][1:fr]
+#    insertcols!(new_inhibited,length(names(new_inhibited))+1,i => resta)
+#end
+#insertcols!(new_inhibited,1,"step" => df[!,"Resistant_inhibited_by"][n][1:fr,"step"])
 #stack(new_inhibited,names(df[!,"Resistant_inhibited_by"][n])[2:end]) |> @vlplot(:area, x=:step, y={:value, stack=:zero}, color="variable:n")

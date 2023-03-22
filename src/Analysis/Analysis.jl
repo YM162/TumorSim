@@ -1,5 +1,5 @@
 module Analysis
-    export get_TTP, get_diversity, get_resistant_fraction_on_detection
+    export get_TTP, get_diversity, get_resistant_fraction_on_detection, get_divergence
 
     using DataFrames
     using StatsBase
@@ -52,6 +52,34 @@ module Analysis
             push!(diversity,[species_richness,shannon_index,evenness])
         end
         return(diversity)
+    end
+
+    function kl_divergence(p::Vector{Float64}, q::Vector{Float64})
+        non_zero_p = findall(x->x!=0,p)
+        return sum([p[i]*log2(p[i]/q[i]) for i in non_zero_p])
+    end
+
+    function jenshen_shannon(p::Vector{Float64}, q::Vector{Float64})
+        m = 0.5*(p+q)
+        return 0.5*(kl_divergence(p,m)+kl_divergence(q,m))
+    end
+
+    function get_divergence(adata::DataFrame,resistant_inhibited_by::DataFrame)
+        divergence = DataFrame(step=Int64[],jenshen_shannon=Float64[],Kullback_Leibler_relfreq_relinhib=Float64[],Kullback_Leibler_relinhib_relfreq=Float64[])
+        adata_rows = eachrow(adata)
+        resistant_inhibited_by_rows = eachrow(resistant_inhibited_by)
+        for (i,row) in enumerate(eachrow(adata))
+
+            if sum(adata_rows[i][2:end]) == 0 || sum(resistant_inhibited_by_rows[i][2:end]) == 0
+                continue
+            end
+
+            relative_frequencies::Vector{Float64} = collect(adata_rows[i][2:end])./collect(sum(adata_rows[i][2:end]))
+            relative_inhibition::Vector{Float64} = collect(resistant_inhibited_by_rows[i][2:end])./collect(sum(resistant_inhibited_by_rows[i][2:end]))
+
+            push!(divergence,[row[1],jenshen_shannon(relative_frequencies,relative_inhibition),kl_divergence(relative_frequencies,relative_inhibition),kl_divergence(relative_inhibition,relative_frequencies)])
+        end
+        return divergence
     end
 end
 

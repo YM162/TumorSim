@@ -1,7 +1,7 @@
 module TumorSim
 
 #We export all the functions needed outside of the module
-export create_scenario, create_treatment, simulate, launch_dashboard, kill_dashboard, get_TTP, get_diversity, get_resistant_fraction_on_detection, TreatmentObject, ScenarioObject
+export create_scenario, create_treatment, simulate, launch_dashboard, kill_dashboard, get_TTP, get_diversity, get_resistant_fraction_on_detection, TreatmentObject, ScenarioObject, build_fitness_table
 
 #We import everything we need
 using DrWatson

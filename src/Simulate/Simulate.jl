@@ -19,12 +19,17 @@ module Simulate
         f2 = inhibited_by_function_generator(fitness)
         agent_collect::Array = [(:genotype, f1),(:inhibited_by, f2,x->x.genotype[treatment.resistance_gene]==1)]
         
+
+        model_collect = [:status]
+        
         model = model_init(death_rate=death_rate, mutation_rate=mutation_rate, scenario=scenario, fitness=fitness,interaction_rule=interaction_rule,treatment=treatment,migration_rate=migration_rate, seed=seed)
         #We stop (not a typo, stop != step) early if a size of max or 0 is reached
         step = create_stop_function(max_steps,Int(floor(treatment.detecting_size*1.5)))
 
-        adata::DataFrame, _ = run!(model, agent_step!, model_step!, step; adata = agent_collect)
+        adata::DataFrame, mdata::DataFrame = run!(model, agent_step!, model_step!, step; adata = agent_collect, mdata = model_collect)
         
+        fulld["Treatment_status"] = mdata
+
         gen_df=eachcol(adata)[2]
         ngen_df=DataFrame()
         for row in gen_df
@@ -50,6 +55,7 @@ module Simulate
 
         fulld["TTP"] = get_TTP(ngen_df,Int(floor(treatment.detecting_size*1.2)))
         fulld["Diversity"] = get_diversity(ngen_df)
+        fulld["Divergence"] = get_divergence(ngen_df,ngen_df2)
         fulld["Resistant_on_detection"] = get_resistant_fraction_on_detection(ngen_df,treatment.detecting_size,treatment.resistance_gene)
 
         fulld["s_dim"] = Int(scenario.x!=1) + Int(scenario.y!=1) + Int(scenario.z!=1)
