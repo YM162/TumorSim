@@ -9,25 +9,28 @@ using ProgressMeter
 using BSON
 using DataFrames
 using Dates
+using CSV
 
 #We test adaptive and continuous therapy
 
-restrictions= []
+#R Generation of landscape using NK model
+#rnk <- rfitness(6, K = 3, model = "NK", scale = c(0,0.055,0.027))
+#write.csv2(rnk,"C://Users/yomis/TFG/TumorSim/scripts/competition_divergence/test_NK.csv")
 
-ngenes = 7
-base_pr = 0.027
-#Base pr multiplicative, except for the last one, which is the resistant gene.
-mult_pr = [1.06,1.11,1.10,1.04,1.09,1.07]
-cost_of_resistance = 0.3
 
-fitness = build_fitness_table(restrictions,base_pr,mult_pr,cost_of_resistance,ngenes)
+csv_reader = CSV.File(projectdir("scripts","competition_divergence","test_NK.csv"))
+fitness = Dict([[x[i] for i in 2:length(x)-1]=>parse(Float64,replace(x[end],","=>".")) for x in csv_reader])
+cost_of_resistance = 0.5
+fitness = Dict(vcat([vcat(x[1],0)=>x[2] for x in fitness],[vcat(x[1],1)=>x[2]*cost_of_resistance for x in fitness]))
+
+
 
 adaptive_therapy = create_treatment(5000, 1, 0.5, 7, 0.75) 
 continuous_therapy = create_treatment(5000, 1, 0.0, 7, 0.75) 
 
 parameters = Dict(
     "death_rate" => [0.3],
-    "mutation_rate" => 0.01,
+    "mutation_rate" => 0.02,
     "scenario" => [create_scenario((100,100),100,"center",false)], 
     "fitness" => fitness,
     "treatment" => [adaptive_therapy],
