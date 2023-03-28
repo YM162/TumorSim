@@ -33,7 +33,7 @@ parameters = Dict(
     "treatment" => [adaptive_therapy],
     "migration_rate" => [0.1],
     "interaction_rule" => [:contact],
-    "seed" => map(abs,rand(Int64,100))
+    "seed" => map(abs,rand(Int64,10000))
 )
 
 parameter_combinations = dict_list(parameters)

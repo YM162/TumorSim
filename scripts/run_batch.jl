@@ -19,7 +19,6 @@ restrictions= [[1,2,1],
                 [2,4,1],
                 [3,4,1]]
 
-restrictions= []
 ngenes = 3
 base_pr = 0.027
 #Base pr multiplicative, except for the last one, which is the resistant gene.
@@ -34,7 +33,7 @@ continuous_therapy = create_treatment(3000, 1, 0.0, 3, 0.75)
 
 parameters = Dict(
     "death_rate" => [0.3],
-    "mutation_rate" => 0.0033,
+    "mutation_rate" => 0.01,
     "scenario" => [create_scenario((100,100),100,"center",false)], 
     "fitness" => fitness,
     "treatment" => [adaptive_therapy,continuous_therapy],
