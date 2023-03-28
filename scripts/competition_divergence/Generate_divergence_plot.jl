@@ -34,16 +34,16 @@ function plot_divergence(filename)
     plot!(finaldf[!,"step"],finaldf[!,"jenshen_shannon_mean"],grid=false,ribbon=finaldf[!,"jenshen_shannon_sd"],fillalpha=.5,label=filename)
 end
 
-plot()
+#plot()
 
-get_clean_divergence("3Genes_AND_Restrictions_27.3.2023.20.6.8.037.bson")
-plot_divergence("3Genes_AND_Restrictions_27.3.2023.20.6.8.037.bson")
+#get_clean_divergence("3Genes_AND_Restrictions_27.3.2023.20.6.8.037.bson")
+#plot_divergence("3Genes_AND_Restrictions_27.3.2023.20.6.8.037.bson")
 
-get_clean_divergence("3Genes_OR_Restrictions_27.3.2023.20.37.37.801.bson")
-plot_divergence("3Genes_OR_Restrictions_27.3.2023.20.37.37.801.bson")
+#get_clean_divergence("3Genes_OR_Restrictions_27.3.2023.20.37.37.801.bson")
+#plot_divergence("3Genes_OR_Restrictions_27.3.2023.20.37.37.801.bson")
 
-get_clean_divergence("3Genes_NO_Restrictions_27.3.2023.20.45.39.355.bson")
-plot_divergence("3Genes_NO_Restrictions_27.3.2023.20.45.39.355.bson")
+#get_clean_divergence("3Genes_NO_Restrictions_27.3.2023.20.45.39.355.bson")
+#plot_divergence("3Genes_NO_Restrictions_27.3.2023.20.45.39.355.bson")
 
-get_clean_divergence("3Genes_OR_Restrictions_27.3.2023.21.50.47.687.bson")
-plot_divergence("3Genes_OR_Restrictions_27.3.2023.21.50.47.687.bson")
+#get_clean_divergence("3Genes_OR_Restrictions_27.3.2023.21.50.47.687.bson")
+#plot_divergence("3Genes_OR_Restrictions_27.3.2023.21.50.47.687.bson")
