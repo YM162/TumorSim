@@ -34,16 +34,16 @@ function plot_divergence(filename)
     plot!(finaldf[!,"step"],finaldf[!,"jenshen_shannon_mean"],grid=false,ribbon=finaldf[!,"jenshen_shannon_sd"],fillalpha=.5,label=filename)
 end
 
-#plot()
-
-#get_clean_divergence("3Genes_AND_Restrictions_27.3.2023.20.6.8.037.bson")
-#plot_divergence("3Genes_AND_Restrictions_27.3.2023.20.6.8.037.bson")
-
-#get_clean_divergence("3Genes_OR_Restrictions_27.3.2023.20.37.37.801.bson")
-#plot_divergence("3Genes_OR_Restrictions_27.3.2023.20.37.37.801.bson")
+plot(xlabel = "Steps",ylabel="Jenshen Shannon",title="Deviation of real competition from perfect mixing model.")
 
 #get_clean_divergence("3Genes_NO_Restrictions_27.3.2023.20.45.39.355.bson")
-#plot_divergence("3Genes_NO_Restrictions_27.3.2023.20.45.39.355.bson")
+plot_divergence("3Genes_AND_Restrictions_28.3.2023.15.56.38.582.bson")
 
-#get_clean_divergence("3Genes_OR_Restrictions_27.3.2023.21.50.47.687.bson")
-#plot_divergence("3Genes_OR_Restrictions_27.3.2023.21.50.47.687.bson")
+#get_clean_divergence("3Genes_AND_Restrictions_27.3.2023.20.6.8.037.bson")
+plot_divergence("3Genes_OR_Restrictions_28.3.2023.16.46.47.769.bson")
+
+#get_clean_divergence("3Genes_OR_Restrictions_27.3.2023.20.37.37.801.bson")
+plot_divergence("3Genes_NO_Restrictions_28.3.2023.16.30.28.822.bson")
+
+
+
