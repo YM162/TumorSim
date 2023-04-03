@@ -19,9 +19,9 @@ using CSV
 
 
 csv_reader = CSV.File(projectdir("scripts","competition_divergence","NK_Fitness_1.csv"))
-fitness = Dict([[x[i] for i in 2:length(x)-1]=>parse(Float64,replace(x[end],","=>".")) for x in csv_reader])
-cost_of_resistance = 0.5
-fitness = Dict(vcat([vcat(x[1],0)=>x[2] for x in fitness],[vcat(x[1],1)=>x[2]*cost_of_resistance for x in fitness]))
+fitness = Dict([[x[i] for i in 2:length(x)-1]=>parse(Float64,replace(x[end],","=>".")) for x in csv_reader if parse(Float64,replace(x[end],","=>"."))>0.0001])
+#cost_of_resistance = 0.5
+#fitness = Dict(vcat([vcat(x[1],0)=>x[2] for x in fitness],[vcat(x[1],1)=>x[2]*cost_of_resistance for x in fitness]))
 
 
 
@@ -30,7 +30,7 @@ continuous_therapy = create_treatment(5000, 1, 0.0, 7, 0.75)
 
 parameters = Dict(
     "death_rate" => [0.3],
-    "mutation_rate" => 0.02,
+    "mutation_rate" => 0.01,
     "scenario" => [create_scenario((100,100),100,"center",false)], 
     "fitness" => fitness,
     "treatment" => [adaptive_therapy],
@@ -43,7 +43,7 @@ parameter_combinations = dict_list(parameters)
 println("Number of simulations: ",length(parameter_combinations))
 steps=5000
 
-filename = "7Genes_NO_Restrictions_"*Dates.format(now(),"d.m.yyyy.H.M.S.s")
+filename = "7Genes_NK_Fitness_1_"*Dates.format(now(),"d.m.yyyy.H.M.S.s")
 println("Starting simulations...")
 
 p = Progress(length(parameter_combinations), barglyphs=BarGlyphs("[=> ]"),output=stdout,barlen=50)
@@ -71,4 +71,5 @@ end
 #Remove every row where any of the columns has an undefined value
 filter(row -> all(x -> !(x isa Number && isnan(x)), row), enddf)
 finaldf = filter(row -> all(x -> !(x isa Number && isnan(x)), row), enddf)
-bson(datadir("simulations","competition_divergence","cleanup",filename),Dict("divergence" => finaldf))
+
+bson(datadir("simulations","competition_divergence","cleanup",filename),Dict("divergence" => finaldf, "divergence_raw" => Matrix(newdf), "TTP" => df[!,"TTP"], "detecting_time" => [sim[!,"step"][findfirst(sim[!,"status"])] for sim in df[!,"Treatment_status"]]))

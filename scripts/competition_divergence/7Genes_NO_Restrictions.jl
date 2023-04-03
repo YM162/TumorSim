@@ -67,4 +67,6 @@ end
 #Remove every row where any of the columns has an undefined value
 filter(row -> all(x -> !(x isa Number && isnan(x)), row), enddf)
 finaldf = filter(row -> all(x -> !(x isa Number && isnan(x)), row), enddf)
-bson(datadir("simulations","competition_divergence","cleanup",filename),Dict("divergence" => finaldf))
+
+bson(datadir("simulations","competition_divergence","cleanup",filename),Dict("divergence" => finaldf, "divergence_raw" => Matrix(newdf), "TTP" => df[!,"TTP"], "detecting_time" => [sim[!,"step"][findfirst(sim[!,"status"])] for sim in df[!,"Treatment_status"]]))
+

@@ -5,6 +5,11 @@ using Distributed
 
 @everywhere using TumorSim
 
+include(projectdir("scripts/competition_divergence/3Genes_NO_Restrictions.jl"))
+
+include(projectdir("scripts/competition_divergence/3Genes_AND_Restrictions.jl"))
+include(projectdir("scripts/competition_divergence/3Genes_OR_Restrictions.jl"))
+
 include(projectdir("scripts/competition_divergence/7Genes_NO_Restrictions.jl"))
 
 include(projectdir("scripts/competition_divergence/7Genes_Example1.jl"))

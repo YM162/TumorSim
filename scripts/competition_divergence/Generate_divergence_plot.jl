@@ -36,14 +36,16 @@ end
 
 plot(xlabel = "Steps",ylabel="Jenshen Shannon",title="Deviation of real competition from perfect mixing model.")
 
-#get_clean_divergence("3Genes_NO_Restrictions_27.3.2023.20.45.39.355.bson")
-plot_divergence("3Genes_AND_Restrictions_28.3.2023.15.56.38.582.bson")
+#plot_divergence("3Genes_AND_Restrictions_28.3.2023.15.56.38.582.bson")
+#plot_divergence("3Genes_OR_Restrictions_28.3.2023.16.46.47.769.bson")
+#plot_divergence("3Genes_NO_Restrictions_28.3.2023.16.30.28.822.bson")
 
-#get_clean_divergence("3Genes_AND_Restrictions_27.3.2023.20.6.8.037.bson")
-plot_divergence("3Genes_OR_Restrictions_28.3.2023.16.46.47.769.bson")
+plot_divergence("7Genes_NO_Restrictions_30.3.2023.15.0.46.206.bson")
+plot_divergence("7Genes_Example1_30.3.2023.15.52.29.549.bson")
+plot_divergence("7Genes_Example2_30.3.2023.16.42.51.333.bson")
+plot_divergence("7Genes_NK_Fitness_1_2.4.2023.16.20.40.75.bson")
+plot_divergence("7Genes_NK_Fitness_2_2.4.2023.17.45.15.901.bson")
 
-#get_clean_divergence("3Genes_OR_Restrictions_27.3.2023.20.37.37.801.bson")
-plot_divergence("3Genes_NO_Restrictions_28.3.2023.16.30.28.822.bson")
 
 
 

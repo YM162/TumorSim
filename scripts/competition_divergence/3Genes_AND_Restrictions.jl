@@ -53,4 +53,22 @@ println("Saving simulations...")
 df = DataFrame(results)
 filepath = datadir("simulations","competition_divergence",filename*".bson")
 
-bson(filepath,Dict("df" => df))
+#bson(filepath,Dict("df" => df))
+using StatsBase
+
+newdf=DataFrame(step=Int64[])
+for i in df[!,"Divergence"]
+    global newdf = outerjoin(newdf,i[:,1:2],on=:step,makeunique=true)
+end
+sort!(newdf,:step)
+
+enddf = DataFrame(step=Int64[],jenshen_shannon_mean=Float64[],jenshen_shannon_sd=Float64[])
+for i in eachrow(newdf)
+    push!(enddf,Dict(:step=>i[1],:jenshen_shannon_mean=>mean(skipmissing(i[2:end])),:jenshen_shannon_sd=>std(skipmissing(i[2:end]))))
+end
+
+#Remove every row where any of the columns has an undefined value
+filter(row -> all(x -> !(x isa Number && isnan(x)), row), enddf)
+finaldf = filter(row -> all(x -> !(x isa Number && isnan(x)), row), enddf)
+
+bson(datadir("simulations","competition_divergence","cleanup",filename),Dict("divergence" => finaldf, "divergence_raw" => Matrix(newdf), "TTP" => df[!,"TTP"], "detecting_time" => [sim[!,"step"][findfirst(sim[!,"status"])] for sim in df[!,"Treatment_status"]]))
