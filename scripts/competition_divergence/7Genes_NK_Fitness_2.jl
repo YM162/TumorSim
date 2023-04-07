@@ -19,9 +19,9 @@ using CSV
 
 
 csv_reader = CSV.File(projectdir("scripts","competition_divergence","NK_Fitness_2.csv"))
-fitness = Dict([[x[i] for i in 2:length(x)-1]=>parse(Float64,replace(x[end],","=>".")) for x in csv_reader])
-cost_of_resistance = 0.5
-fitness = Dict(vcat([vcat(x[1],0)=>x[2] for x in fitness],[vcat(x[1],1)=>x[2]*cost_of_resistance for x in fitness]))
+fitness = Dict([[x[i] for i in 2:length(x)-1]=>parse(Float64,replace(x[end],","=>".")) for x in csv_reader if parse(Float64,replace(x[end],","=>"."))>0.0001])
+#cost_of_resistance = 0.5
+#fitness = Dict(vcat([vcat(x[1],0)=>x[2] for x in fitness],[vcat(x[1],1)=>x[2]*cost_of_resistance for x in fitness]))
 
 
 
