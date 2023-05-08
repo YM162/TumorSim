@@ -20,7 +20,7 @@ module Dashboard
         death_rate=0.1,
         mutation_rate=0.01,
         migration_rate=0.01,
-        interaction_rule=:hierarchical_voter,
+        interaction_rule=:contact,
         seed=0) 
     
         model = TumorSim.TumorModel.model_init(interaction_rule=interaction_rule,death_rate=death_rate, mutation_rate=mutation_rate, migration_rate=migration_rate,

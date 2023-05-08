@@ -69,7 +69,7 @@ using VegaLite
 
 #stack(df[!,"Resistant_inhibited_by"][n],names(df[!,"Resistant_inhibited_by"][n])[2:end]) |> @vlplot(:area, x=:step, y={:value, stack=:normalize}, color="variable:n")
 
-#df[!,"Divergence"][n] |> @vlplot(:line, x=:step, y=:jenshen_shannon, color=:variable)
+#df[!,"Divergence"][n] |> @vlplot(:line, x=:step, y=:jenshen_shannon color=:variable)
 
 
 
