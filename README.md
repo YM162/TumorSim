@@ -31,8 +31,6 @@ using TumorSim
 # create_scenario(dims, Initial Cells, cell_positions).
 # Cell position can be "center", "random" or an array specifying the exact positions.
 
-scenario_0D = create_scenario(1000000,10)
-
 scenario_1D = create_scenario((1000000,),10,"center")
 
 scenario_2D = create_scenario((1000,1000),10,"center")
@@ -41,41 +39,42 @@ scenario_3D = create_scenario((100,100,100),10,"center")
 ```
 <b>4.- Create a fitness landscape.</b> 
 ```julia
-#Must be a dictionary with genotype keys mapping to fitness values.
+#Must be a dictionary with genotype keys mapping to mitosis probabilities. If a genotype is not in the dictionary, it is asumed to have a mitosis probability of 0.
 
-fitness=Dict([0,0,0]=>1, 
-             [1,0,0]=>1.3,
-             [0,1,0]=>1.2,
-             [1,1,0]=>1.5,
-             [1,1,1]=>1.2)
+fitness = Dict([0,0,0]=>0.027,
+                [1,0,0]=>0.030,
+                [0,1,0]=>0.033,
+                [1,1,0]=>0.046,
+                [1,1,1]=>0.025)
 
-#We can also use the OncoSimulR rfitness function.
-fitness=OncoSimulR_rfitness(g=3,c=1,sd=0.5)
+#We can also use the OncoSimulR rfitness function. 
+#See ./scripts/competition_divergence/7Genes_NK_Fitness_1.jl for a working example.
 ```
 >For more information about generating random fitness landscapes take a look at the [OncoSimulR documentation](https://www.bioconductor.org/packages/release/bioc/vignettes/OncoSimulR/inst/doc/OncoSimulR.html#9_Generating_random_fitness_landscapes).
 
 <b>5.- Create a Treatment.</b>
 ```julia
-#Treatment(Detection size, Starting size, Pausing size, Gene of resistance, kill_rate)
+#Treatment(Detection size, Starting size (% of detection size), Pausing size (% of detection size), Gene of resistance, kill_rate)
 
-adaptive_therapy = create_treatment(3000, 2000, 1000, 3, 0.75) 
+adaptive_therapy = create_treatment(10000, 1.0, 0.5, 3, 0.75) 
 
-continuous_therapy = create_treatment(3000, 2000, 0, 3, 0.75) 
+continuous_therapy = create_treatment(10000, 1.0, 0, 3, 0.75) 
 
 #After the Detection size has been reached, treatment cycles starting and pausing at the specified sizes will begin, killing kill_rate% of the susceptible cells that try to reproduce.
 ```
 
 <b>8.- Create a vector of all the scenarios you want to test.</b>
 ```julia
-#We need to specify pr (Base proliferation rate), dr (Death rate) and mr (Mutation rate)
+#We need to specify death rate (% of WT mitosis probability), mutation rate, starting scenario, fitness landscape, treatment, migration rate and interaction rule (:contect or :hierarchical_voter)
 
 parameters = Dict(
-    "pr" => [0.01,0.02,0.03,0,04,0.05],
-    "dr" => [0,0.2,0.4,0.6,0.8],
-    "mr" => [0.001,0.005,0.01,0.05,0.1],   
-    "scenario" => [scenario_0D,scenario_1D,scenario_2D,scenario_3D], 
+    "death_rate" => [0,0.3],
+    "mutation_rate" => [0.01,0.015,0.02],   
+    "scenario" => [scenario_2D,scenario_3D], 
     "fitness" => fitness,
     "treatment" => [adaptive_therapy,continuous_therapy],
+    "migration_rate" => [0.1],
+    "interaction_rule" => [:contact],
     "seed" => map(abs,rand(Int64,1000))
 )
 
@@ -86,28 +85,45 @@ parameter_combinations = dict_list(parameters)
 <b>9a.- Run a single simulation.</b>
 ```julia
 #We specify the number of steps each simulation will go through. The simulation will stop early if all cells die or if we reach 1.5 * treatment.detection_size (resistance was aquired).
-steps=1000
+steps=5000
 
 #Get a dictionary with the results of the simulation.
 result = simulate(parameter_combinations[1],steps)
 
-#We save it to disk using DrWatson's safesave and savename functions.
-safesave(datadir("simulations", savename(result, "jld2")),result)
+#We save it to disk in the BSON format
+using BSON
+filepath = datadir("simulations","example_sim.bson")
+bson(filepath,Dict("result" => result))
 
 ```
 <b>9b.- Run all the simulations at once using parallelization.</b>
 ```julia
 using Distributed
 using ProgressMeter
-#We use pmap to take advantage of parallelization to perform the simulations.
-results = @showprogress pmap(simulate,parameter_combinations,fill(steps,length(parameter_combinations)))
 
-#We again use DrWatson's safesave and savename functions to save each simulation to disk.
-for (i, d) in enumerate(parameter_combinations)
-    safesave(datadir("simulations", savename(results[i], "jld2")), results[i])
-end
+#We use progress_pmap from the ProgressMeter package to take advantage of parallelization and perform the simulations.
+p = Progress(length(parameter_combinations), 
+            barglyphs=BarGlyphs("[=> ]"),output=stdout,barlen=50)
+
+results = progress_pmap(simulate,
+                        parameter_combinations,
+                        fill(steps,length(parameter_combinations)),progress=p)
+
+
+#We again save all of the simulations in a dataframe in the BSON format.
+using BSON
+using DataFrames
+
+df = DataFrame(results)
+filepath = datadir("simulations","example_multi_sim.bson")
+bson(filepath,Dict("df" => df))
 ```
-<b>10.- Collect the data from all the simulations you saved.</b>
-```julia
-df = collect_results(datadir("simulations"))
-```
+
+
+# License
+All code is distributed under the GNU GPL v. 3.0 license.
+
+# Citation
+A pre-print of our manuscript using this model can be found in the bioRxiv:
+* Fontaneda, D. & Diaz-Uriarte, R. (2023). Adaptive therapy in cancer: the role of restrictions in the accumulation of mutations. BioRxiv, 2023.05.18(541330), doi: https://doi.org/10.1101/2023.05.18.541330
+
