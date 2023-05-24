@@ -10,9 +10,7 @@ using BSON
 using DataFrames
 using Dates
 
-#We test adaptive and continuous therapy
-
-
+#We plot an example to explain the divergence between the relative cell distribution and the cells inhibiting the resistant cell's growth.
 
 fitness = Dict([0,0,0]=>0.027,
                 [1,0,0]=>0.032,
