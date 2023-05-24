@@ -11,7 +11,14 @@ TumorSim.jl
 git clone https://github.com/YM162/TumorSim.git
 cd TumorSim
 ```
-<b>2.- (Optional) Build a sysimage for faster loading times.</b>
+<b>2.- Install all required dependencies.</b>
+```julia
+using DrWatson
+@quickactivate "TumorSim"
+
+using Pkg; Pkg.instantiate()
+```
+<b>3.- (Optional) Build a sysimage for faster loading times.</b>
 ```bash
 julia scripts/build.jl
 ```
