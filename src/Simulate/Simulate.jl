@@ -15,7 +15,7 @@ module Simulate
         @unpack seed, death_rate, mutation_rate, fitness, scenario, treatment, migration_rate, interaction_rule = d
         
         fulld::Dict = copy(d)
-        f1 = genotype_fraction_function_generator(fitness)
+        f1 = genotype_count_function_generator(fitness)
         f2 = inhibited_by_function_generator(fitness)
         agent_collect::Array = [(:genotype, f1),(:inhibited_by, f2,x->x.genotype[treatment.resistance_gene]==1)]
         

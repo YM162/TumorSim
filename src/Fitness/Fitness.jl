@@ -2,10 +2,10 @@
 #Now fitness is birth rate for each genotype.
 
 module Fitness
-    export genotype_fraction_function_generator, bit_2_int, inhibited_by_function_generator, build_fitness_table
+    export genotype_count_function_generator, bit_2_int, inhibited_by_function_generator, build_fitness_table
     
     using DataStructures
-    function genotype_fraction_function_generator(fitness::Dict{Vector{Int64},Float64},)
+    function genotype_count_function_generator(fitness::Dict{Vector{Int64},Float64},)
 
         genotypes = [BitArray(x) for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]
         genotypes_names = [replace(string(x)," "=>"") for x in sort!([x for x in keys(fitness)],by=x -> bit_2_int(BitArray(x)))]

@@ -27,7 +27,7 @@ module Dashboard
             scenario=scenario, fitness=fitness,treatment=treatment, 
             seed=seed)
         
-        f = TumorSim.genotype_fraction_function_generator(fitness)
+        f = TumorSim.genotype_count_function_generator(fitness)
         agent_collect::Array = [(:genotype, f)]
         abmobs = ABMObservable(model;agent_step! = TumorSim.TumorModel.agent_step!,model_step! = TumorSim.TumorModel.model_step!, adata = agent_collect)
         return abmobs
