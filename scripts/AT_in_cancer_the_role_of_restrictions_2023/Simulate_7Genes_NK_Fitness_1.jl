@@ -9,24 +9,23 @@ using ProgressMeter
 using BSON
 using DataFrames
 using Dates
+using CSV
 
-#We test adaptive and continuous therapy
+#We test NK fitness landscapes with 7 genes and 3 interactions per gene under the NK model
 
-restrictions= [[1,2,1],
-                [1,3,1],
-                [2,4,1],
-                [3,4,1]]
+#R Generation of landscape using NK model
+#rnk <- rfitness(6, K = 3, model = "NK", scale = c(0,0.055,0.027))
+#write.csv2(rnk,"./scripts/AT_in_cancer_the_role_of_restrictions_2023/NK_Fitness_1.csv.csv")
 
-ngenes = 3
-base_pr = 0.027
-#Base pr multiplicative, except for the last one, which is the resistant gene.
-mult_pr = [1.16,1.35]
-cost_of_resistance = 0.15
+csv_reader = CSV.File(projectdir("scripts","AT_in_cancer_the_role_of_restrictions_2023","NK_Fitness_1.csv"))
+fitness = Dict([[x[i] for i in 2:length(x)-1]=>parse(Float64,replace(x[end],","=>".")) for x in csv_reader if parse(Float64,replace(x[end],","=>"."))>0.0001])
+#cost_of_resistance = 0.5
+#fitness = Dict(vcat([vcat(x[1],0)=>x[2] for x in fitness],[vcat(x[1],1)=>x[2]*cost_of_resistance for x in fitness]))
 
-fitness = build_fitness_table(restrictions,base_pr,mult_pr,cost_of_resistance,ngenes)
 
-adaptive_therapy = create_treatment(3000, 1, 0.5, 3, 0.75) 
-continuous_therapy = create_treatment(3000, 1, 0.0, 3, 0.75) 
+
+adaptive_therapy = create_treatment(5000, 1, 0.5, 7, 0.75) 
+continuous_therapy = create_treatment(5000, 1, 0.0, 7, 0.75) 
 
 parameters = Dict(
     "death_rate" => [0.3],
@@ -43,7 +42,7 @@ parameter_combinations = dict_list(parameters)
 println("Number of simulations: ",length(parameter_combinations))
 steps=5000
 
-filename = "3Genes_AND_Restrictions_"*Dates.format(now(),"d.m.yyyy.H.M.S.s")
+filename = "7Genes_NK_Fitness_1_"*Dates.format(now(),"d.m.yyyy.H.M.S.s")
 println("Starting simulations...")
 
 p = Progress(length(parameter_combinations), barglyphs=BarGlyphs("[=> ]"),output=stdout,barlen=50)
@@ -51,7 +50,8 @@ results = progress_pmap(simulate,parameter_combinations,fill(steps,length(parame
 
 println("Saving simulations...")
 df = DataFrame(results)
-filepath = datadir("simulations","competition_divergence",filename*".bson")
+filepath = datadir("simulations","AT_in_cancer_the_role_of_restrictions_2023",filename*".bson")
+
 
 #bson(filepath,Dict("df" => df))
 using StatsBase
@@ -62,16 +62,16 @@ for i in df[!,"Divergence"]
 end
 sort!(newdf,:step)
 
-enddf = DataFrame(step=Int64[],jenshen_shannon_mean=Float64[],jenshen_shannon_sd=Float64[])
+enddf = DataFrame(step=Int64[],jensen_shannon_mean=Float64[],jensen_shannon_sd=Float64[])
 for i in eachrow(newdf)
-    push!(enddf,Dict(:step=>i[1],:jenshen_shannon_mean=>mean(skipmissing(i[2:end])),:jenshen_shannon_sd=>std(skipmissing(i[2:end]))))
+    push!(enddf,Dict(:step=>i[1],:jensen_shannon_mean=>mean(skipmissing(i[2:end])),:jensen_shannon_sd=>std(skipmissing(i[2:end]))))
 end
 
 #Remove every row where any of the columns has an undefined value
 filter(row -> all(x -> !(x isa Number && isnan(x)), row), enddf)
 finaldf = filter(row -> all(x -> !(x isa Number && isnan(x)), row), enddf)
 
-#bson(datadir("simulations","competition_divergence","cleanup",filename),Dict("divergence" => finaldf, "divergence_raw" => Matrix(newdf), "TTP" => df[!,"TTP"], "detecting_time" => [sim[!,"step"][findfirst(sim[!,"status"])] for sim in df[!,"Treatment_status"]]))
+#bson(datadir("simulations","AT_in_cancer_the_role_of_restrictions_2023","cleanup",filename),Dict("divergence" => finaldf, "divergence_raw" => Matrix(newdf), "TTP" => df[!,"TTP"], "detecting_time" => [sim[!,"step"][findfirst(sim[!,"status"])] for sim in df[!,"Treatment_status"]]))
 println("Calculating stats of f0 for",filename)
 println("Mean: ",mean(skipmissing(df[!,"Resistant_on_detection"])))
 println("Standard deviation: ",std(skipmissing(df[!,"Resistant_on_detection"])))

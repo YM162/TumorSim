@@ -16,19 +16,19 @@ pgfplotsx()
 
 
 function plot_divergence(finaldf,legendname,linestyle)
-    plot!(finaldf[!,"step"],finaldf[!,"jenshen_shannon_mean"],grid=false,ribbon=finaldf[!,"jenshen_shannon_sd"],fillalpha=.5,label=legendname,linestyle=linestyle)
+    plot!(finaldf[!,"step"],finaldf[!,"jensen_shannon_mean"],grid=false,ribbon=finaldf[!,"jensen_shannon_sd"],fillalpha=.5,label=legendname,linestyle=linestyle)
 end
 
 function load_scaled_data()
-    _7Genes_Ex1 = BSON.load(datadir("simulations","competition_divergence","cleanup","7Genes_Example1_3.4.2023.4.31.17.226.bson"))
+    _7Genes_Ex1 = BSON.load(datadir("simulations","AT_in_cancer_the_role_of_restrictions_2023","cleanup","7Genes_Example1_3.4.2023.4.31.17.226.bson"))
     _7Genes_Ex1_df = _7Genes_Ex1["divergence"]
     _7Genes_Ex1_df[!,"step"] = (_7Genes_Ex1_df[!,"step"] .- mean(_7Genes_Ex1["detecting_time"])) ./ (mean(_7Genes_Ex1["TTP"]) .- mean(_7Genes_Ex1["detecting_time"]))
 
-    _7Genes_Ex2 = BSON.load(datadir("simulations","competition_divergence","cleanup","7Genes_Example2_3.4.2023.5.29.23.058.bson"))
+    _7Genes_Ex2 = BSON.load(datadir("simulations","AT_in_cancer_the_role_of_restrictions_2023","cleanup","7Genes_Example2_3.4.2023.5.29.23.058.bson"))
     _7Genes_Ex2_df = _7Genes_Ex2["divergence"]
     _7Genes_Ex2_df[!,"step"] = (_7Genes_Ex2_df[!,"step"] .- mean(_7Genes_Ex2["detecting_time"])) ./ (mean(_7Genes_Ex2["TTP"]) .- mean(_7Genes_Ex2["detecting_time"]))
 
-    _7Genes_NO = BSON.load(datadir("simulations","competition_divergence","cleanup","7Genes_NO_Restrictions_12.4.2023.18.21.50.966.bson"))
+    _7Genes_NO = BSON.load(datadir("simulations","AT_in_cancer_the_role_of_restrictions_2023","cleanup","7Genes_NO_Restrictions_12.4.2023.18.21.50.966.bson"))
     _7Genes_NO_df = _7Genes_NO["divergence"]
     _7Genes_NO_df[!,"step"] = (_7Genes_NO_df[!,"step"] .- mean(_7Genes_NO["detecting_time"])) ./ (mean(_7Genes_NO["TTP"]) .- mean(_7Genes_NO["detecting_time"]))
 
@@ -66,4 +66,4 @@ end
 
 plot_scaled_figure(_7Genes_Ex1_df,_7Genes_Ex2_df,_7Genes_NO_df)
 
-savefig(datadir("figures","competition_divergence","7Genes_Examples_Divergence_Scaled.tex"))
+savefig(datadir("figures","AT_in_cancer_the_role_of_restrictions_2023","7Genes_Examples_Divergence_Scaled.tex"))

@@ -11,14 +11,14 @@ using DataFrames
 using Dates
 using CSV
 
-#We test adaptive and continuous therapy
+#We test NK fitness landscapes with 7 genes and 3 interactions per gene under the NK model
 
 #R Generation of landscape using NK model
 #rnk <- rfitness(6, K = 3, model = "NK", scale = c(0,0.055,0.027))
-#write.csv2(rnk,"C://Users/yomis/TFG/TumorSim/scripts/competition_divergence/test_NK.csv")
+#write.csv2(rnk,"C://Users/yomis/TFG/TumorSim/scripts/AT_in_cancer_the_role_of_restrictions_2023/test_NK.csv")
 
 
-csv_reader = CSV.File(projectdir("scripts","competition_divergence","NK_Fitness_2.csv"))
+csv_reader = CSV.File(projectdir("scripts","AT_in_cancer_the_role_of_restrictions_2023","NK_Fitness_2.csv"))
 fitness = Dict([[x[i] for i in 2:length(x)-1]=>parse(Float64,replace(x[end],","=>".")) for x in csv_reader if parse(Float64,replace(x[end],","=>"."))>0.0001])
 #cost_of_resistance = 0.5
 #fitness = Dict(vcat([vcat(x[1],0)=>x[2] for x in fitness],[vcat(x[1],1)=>x[2]*cost_of_resistance for x in fitness]))
@@ -51,7 +51,7 @@ results = progress_pmap(simulate,parameter_combinations,fill(steps,length(parame
 
 println("Saving simulations...")
 df = DataFrame(results)
-filepath = datadir("simulations","competition_divergence",filename*".bson")
+filepath = datadir("simulations","AT_in_cancer_the_role_of_restrictions_2023",filename*".bson")
 
 
 #bson(filepath,Dict("df" => df))
@@ -63,16 +63,16 @@ for i in df[!,"Divergence"]
 end
 sort!(newdf,:step)
 
-enddf = DataFrame(step=Int64[],jenshen_shannon_mean=Float64[],jenshen_shannon_sd=Float64[])
+enddf = DataFrame(step=Int64[],jensen_shannon_mean=Float64[],jensen_shannon_sd=Float64[])
 for i in eachrow(newdf)
-    push!(enddf,Dict(:step=>i[1],:jenshen_shannon_mean=>mean(skipmissing(i[2:end])),:jenshen_shannon_sd=>std(skipmissing(i[2:end]))))
+    push!(enddf,Dict(:step=>i[1],:jensen_shannon_mean=>mean(skipmissing(i[2:end])),:jensen_shannon_sd=>std(skipmissing(i[2:end]))))
 end
 
 #Remove every row where any of the columns has an undefined value
 filter(row -> all(x -> !(x isa Number && isnan(x)), row), enddf)
 finaldf = filter(row -> all(x -> !(x isa Number && isnan(x)), row), enddf)
 
-#bson(datadir("simulations","competition_divergence","cleanup",filename),Dict("divergence" => finaldf, "divergence_raw" => Matrix(newdf), "TTP" => df[!,"TTP"], "detecting_time" => [sim[!,"step"][findfirst(sim[!,"status"])] for sim in df[!,"Treatment_status"]]))
+#bson(datadir("simulations","AT_in_cancer_the_role_of_restrictions_2023","cleanup",filename),Dict("divergence" => finaldf, "divergence_raw" => Matrix(newdf), "TTP" => df[!,"TTP"], "detecting_time" => [sim[!,"step"][findfirst(sim[!,"status"])] for sim in df[!,"Treatment_status"]]))
 println("Calculating stats of f0 for",filename)
 println("Mean: ",mean(skipmissing(df[!,"Resistant_on_detection"])))
 println("Standard deviation: ",std(skipmissing(df[!,"Resistant_on_detection"])))

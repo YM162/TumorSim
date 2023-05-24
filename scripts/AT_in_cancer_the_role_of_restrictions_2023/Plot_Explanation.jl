@@ -46,7 +46,7 @@ results = progress_pmap(simulate,parameter_combinations,fill(steps,length(parame
 
 println("Saving simulations...")
 df = DataFrame(results)
-filepath = datadir("simulations","competition_divergence",filename*".bson")
+filepath = datadir("simulations","AT_in_cancer_the_role_of_restrictions_2023",filename*".bson")
 
 #bson(filepath,Dict("df" => df))
 using StatsBase
@@ -63,7 +63,7 @@ using VegaLite
 
 #stack(df[!,"Resistant_inhibited_by"][n],names(df[!,"Resistant_inhibited_by"][n])[2:end]) |> @vlplot(:area, x=:step, y={:value, stack=:normalize}, color="variable:n")
 
-#df[!,"Divergence"][n] |> @vlplot(:line, x=:step, y=:jenshen_shannon, color=:variable)
+#df[!,"Divergence"][n] |> @vlplot(:line, x=:step, y=:jensen_shannon, color=:variable)
 
 using Plots
 
@@ -118,7 +118,7 @@ p3 = areaplot(df[!,"Resistant_inhibited_by"][1][!,"step"], [df[!,"Resistant_inhi
         xticks = nothing,
         ylabel=L"\parbox{5em}{\textbf{Relative\ resistant\\cell\ inhibition}}")
 
-p4 = plot(df[!,"Divergence"][1][!,"step"], df[!,"Divergence"][1][!,"jenshen_shannon"], seriescolor = [:royalblue1],
+p4 = plot(df[!,"Divergence"][1][!,"step"], df[!,"Divergence"][1][!,"jensen_shannon"], seriescolor = [:royalblue1],
         grid=false,
         label = nothing, 
         linewidth = 2,       
@@ -151,4 +151,4 @@ vline!(p[4], [Tstart], color = :green, linewidth = 2, label=nothing)
 vline!(p[4], [TTP], color = :red, linewidth = 2, label=nothing,
 tex_output_standalone = true)
 
-savefig(datadir("figures","competition_divergence","Plot_Explanation.tex"))
+savefig(datadir("figures","AT_in_cancer_the_role_of_restrictions_2023","Plot_Explanation.tex"))
