@@ -48,7 +48,7 @@ fitness = Dict([0,0,0]=>0.027,
                 [1,1,1]=>0.025)
 
 #We can also use the OncoSimulR rfitness function. 
-#See ./scripts/competition_divergence/7Genes_NK_Fitness_1.jl for a working example.
+#See ./scripts/AT_in_cancer_the_role_of_restrictions_2023/Simulate_7Genes_NK_Fitness_1.jl for a working example.
 ```
 >For more information about generating random fitness landscapes take a look at the [OncoSimulR documentation](https://www.bioconductor.org/packages/release/bioc/vignettes/OncoSimulR/inst/doc/OncoSimulR.html#9_Generating_random_fitness_landscapes).
 
