@@ -3,7 +3,10 @@ TumorSim.jl
 ![Build Status](https://github.com/YM162/TumorSim/actions/workflows/CI.yml/badge.svg)
 [![codecov](https://codecov.io/gh/YM162/TumorSim/branch/main/graph/badge.svg?token=6YLRTP584L)](https://codecov.io/gh/YM162/TumorSim)
 
-***Simulation of tumoral growth in multiple dimensions with a special focus on fitness landscapes and adaptive therapy.***
+Julia code for the ***simulation of tumoral growth in multiple dimensions with a special focus on fitness landscapes and adaptive therapy.***
+
+This code is used in Fontaneda, D. & Diaz-Uriarte, R. (2023). Adaptive therapy in cancer: the role of restrictions in the accumulation of mutations. BioRxiv, 2023.05.18(541330), doi: https://doi.org/10.1101/2023.05.18.541330
+
 
 # How to install
 <b>1.- Clone the git repo.</b>
@@ -12,6 +15,8 @@ git clone https://github.com/YM162/TumorSim.git
 cd TumorSim
 ```
 <b>2.- Install all required dependencies.</b>
+First, you must install Julia: https://julialang.org/downloads/ . Then, install the dependencies:
+
 ```julia
 using DrWatson
 @quickactivate "TumorSim"
@@ -131,6 +136,6 @@ bson(filepath,Dict("df" => df))
 All code is distributed under the GNU GPL v. 3.0 license.
 
 # Citation
-A pre-print of our manuscript using this model can be found in the bioRxiv:
+A pre-print of our manuscript using this model can be found in bioRxiv:
 * Fontaneda, D. & Diaz-Uriarte, R. (2023). Adaptive therapy in cancer: the role of restrictions in the accumulation of mutations. BioRxiv, 2023.05.18(541330), doi: https://doi.org/10.1101/2023.05.18.541330
 
