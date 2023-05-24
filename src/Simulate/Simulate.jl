@@ -19,7 +19,6 @@ module Simulate
         f2 = inhibited_by_function_generator(fitness)
         agent_collect::Array = [(:genotype, f1),(:inhibited_by, f2,x->x.genotype[treatment.resistance_gene]==1)]
         
-
         model_collect = [:status]
         
         model = model_init(death_rate=death_rate, mutation_rate=mutation_rate, scenario=scenario, fitness=fitness,interaction_rule=interaction_rule,treatment=treatment,migration_rate=migration_rate, seed=seed)
@@ -49,9 +48,6 @@ module Simulate
 
         phylogeny = countmap([x.phylogeny for x in allagents(model)])
         fulld["Phylogeny"] = phylogeny
-        
-
-        
 
         fulld["TTP"] = get_TTP(ngen_df,Int(floor(treatment.detecting_size*1.2)))
         fulld["Diversity"] = get_diversity(ngen_df)
